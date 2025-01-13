@@ -1,7 +1,7 @@
 'use client';
 import { useDispatch, useSelector } from 'react-redux';
-import { increment, decrement } from '../redux/counterSlice';
-import { RootState } from '../redux/store';
+import { increment, decrement } from '@/src/redux/counterSlice';
+import { RootState } from '@/src/redux/store';
 
 
 export default function Home() {

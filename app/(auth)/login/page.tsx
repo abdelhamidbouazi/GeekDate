@@ -2,41 +2,41 @@
 import React from 'react'
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
-import { setUser } from '@/app/services/slices/userSlice';
-import AuthForm from '@/app/components/AuthForm';
-import { postLogin } from '@/app/services/auth';
+import { setUser } from '@/src/services/slices/userSlice';
+import AuthForm from '@/src/components/AuthForm';
+import { postLogin } from '@/src/services/auth';
 import Link from 'next/link';
 
-const response = {
-    success: true,
-    message: 'Login successful',
-    data: {
-        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        tokenType: 'Bearer',
-        expiresIn: 3600,
-        isProfileCompleted: true,
-        user: {
-            userId: '123e4567-e89b-12d3-a456-426614174000',
-            username: 'loveseeker123',
-            profilePicture: 'https://matcha.com/images/profiles/user123.jpg',
-            bio: 'Love to travel and meet new people ',
-            age: 28,
-            gender: 'female',
-            location: { city: 'Paris', country: 'France' },
-            interests: ['traveling', 'cooking', 'fitness'],
-            matchPreferences: {
-                gender: 'male',
-                ageRange: [25, 35],
-                distance: 50,
-            },
-            isPremium: false,
-            newMatchesCount: 3,
-            unreadMessagesCount: 7,
-            lastLogin: '2025-01-08T10:30:00Z',
-            registrationDate: '2024-05-15T12:00:00Z',
-        },
-    },
-};
+// const response = {
+//     success: true,
+//     message: 'Login successful',
+//     data: {
+//         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+//         tokenType: 'Bearer',
+//         expiresIn: 3600,
+//         isProfileCompleted: true,
+//         user: {
+//             userId: '123e4567-e89b-12d3-a456-426614174000',
+//             username: 'loveseeker123',
+//             profilePicture: 'https://matcha.com/images/profiles/user123.jpg',
+//             bio: 'Love to travel and meet new people ',
+//             age: 28,
+//             gender: 'female',
+//             location: { city: 'Paris', country: 'France' },
+//             interests: ['traveling', 'cooking', 'fitness'],
+//             matchPreferences: {
+//                 gender: 'male',
+//                 ageRange: [25, 35],
+//                 distance: 50,
+//             },
+//             isPremium: false,
+//             newMatchesCount: 3,
+//             unreadMessagesCount: 7,
+//             lastLogin: '2025-01-08T10:30:00Z',
+//             registrationDate: '2024-05-15T12:00:00Z',
+//         },
+//     },
+// };
 
 function page() {
     const dispatch = useDispatch();
@@ -44,11 +44,11 @@ function page() {
 
     const handleLoginSubmit = async (data: Record<string, string>) => {
         try {
-            await postLogin(data);
+            const response = await postLogin(data);
             if (response.success) {
                 dispatch(setUser(response.data));
                 console.log("done")
-                router.push('/dashboard');
+                router.push('/browse');
             }
         } catch (error) {
             console.log(error)

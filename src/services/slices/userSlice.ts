@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { UserState } from '../../interfaces/user';
+import { setToken } from '@/app/actions';
 
 const initialState: UserState = {
   token: null,
@@ -14,6 +15,8 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser(state, action: PayloadAction<UserState>) {
+      setToken(action.payload.token)
+      console.log("moved from userSlice")
       return { ...state, ...action.payload };
     },
     clearUser() {

@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
-import AuthForm from '@/app/components/AuthForm';
-import { postRegister } from "@/app/services/auth";
+import AuthForm from '@/src/components/AuthForm';
+import { postRegister } from "@/src/services/auth";
 import Link from 'next/link';
 
 function page() {
