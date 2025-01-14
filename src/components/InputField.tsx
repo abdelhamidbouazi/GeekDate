@@ -1,6 +1,7 @@
 'use client'
 import * as React from "react";
 import { Input } from "@nextui-org/react";
+import { EyeFilledIcon, EyeSlashFilledIcon } from "./icons/eyes";
 
 interface InputFieldProps {
   label: string;
@@ -11,6 +12,7 @@ interface InputFieldProps {
   validate?: (value: string) => string | null;
   errorMessage?: string;
   name?: string;
+  isPassword?: boolean;
 }
 
 export default function InputField({
@@ -22,6 +24,7 @@ export default function InputField({
   validate,
   name,
   errorMessage,
+  isPassword,
 }: InputFieldProps) {
   const [error, setError] = React.useState<string | null>(null);
 
@@ -35,9 +38,10 @@ export default function InputField({
 
   return (
     <Input
+      variant="bordered"
+      isClearable
       isRequired
       label={label}
-      labelPlacement="outside"
       placeholder={placeholder}
       type={type}
       value={value}

@@ -1,4 +1,6 @@
+import useSWR from "swr";
 import axios from "../lib/axios";
+import { fetcher } from "./fetcher";
 
 export interface LoginRequest {
   email: string;
@@ -23,6 +25,16 @@ export interface LoginResponse {
 //     throw new Error(error.response?.data?.message || 'An error occurred while logging in');
 //   }
 // }
+
+export function useUser(id: string) {
+  const { data, error, isLoading } = useSWR(`/api/user/${id}`, fetcher);
+  
+  return {
+    user: data,
+    isLoading,
+    isError: error,
+  };
+}
 
 export const postLogin = async (data: Record<string, string>) => {
   const response = await axios.post<LoginResponse>("/api/Account/login", data);

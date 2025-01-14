@@ -28,7 +28,6 @@ export interface Location {
   
   export interface UserState {
     token: string | null;
-    tokenType: string | null;
     expiresIn: number | null;
     isProfileCompleted: boolean | null;
     user: User | null;

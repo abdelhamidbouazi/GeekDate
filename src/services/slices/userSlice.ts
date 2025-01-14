@@ -4,7 +4,6 @@ import { setToken } from '@/app/actions';
 
 const initialState: UserState = {
   token: null,
-  tokenType: null,
   expiresIn: null,
   isProfileCompleted: false,
   user: null,
@@ -17,6 +16,7 @@ const userSlice = createSlice({
     setUser(state, action: PayloadAction<UserState>) {
       setToken(action.payload.token)
       console.log("moved from userSlice")
+      console.log("action.payload", action.payload)
       return { ...state, ...action.payload };
     },
     clearUser() {

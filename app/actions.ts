@@ -7,3 +7,8 @@ export async function setToken(token) {
 
     cookieStore.set('token', token)
 }
+export async function deleteToken() {
+    const cookieStore = await cookies()
+    
+    cookieStore.delete('token')
+  }
