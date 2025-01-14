@@ -8,6 +8,7 @@ import { postLogin } from '@/src/services/auth';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Image, LinkIcon, useSelect } from '@nextui-org/react';
+import { UserState } from '@/src/interfaces/user';
 
 // const response = {
 //     success: true,
@@ -45,16 +46,16 @@ function page() {
     const router = useRouter();
 
 
-    const handleLoginSubmit = async (data: Record<string, string>) => {
-
+    const handleLoginSubmit = async (loginPayload: Record<string, string>) => {
         try {
-            const response = await postLogin(data);
-            dispatch(setUser(response.data));
-            toast.success('Logged succefully');
+            const response = await postLogin(loginPayload);
+            const userData: any = response.data;
+            dispatch(setUser(userData));
+            toast.success('Logged successfully');
             router.push('/browse');
         } catch (err: any) {
             toast.error(`${err.response.data.message}`);
-            console.log("response is ----> ", err.response.data.message)
+            console.log("response is ----> ", err.response.data.message);
         }
     };
     return (

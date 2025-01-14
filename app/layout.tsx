@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "./Navbar";
 import { RootProvider } from "@/src/redux/provider";
 import { Toaster } from "react-hot-toast";
+import { Suspense } from "react";
+import { Spinner } from "@nextui-org/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,10 +31,12 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+      >
         {/* <Navbar /> */}
         <RootProvider>
-        {children}
+          <Suspense fallback={<Spinner color="danger" />}>
+            {children}
+          </Suspense >
         </RootProvider>
         <Toaster />
       </body>

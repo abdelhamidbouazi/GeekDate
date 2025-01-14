@@ -41,7 +41,7 @@ export default function AuthForm({ isLogin, onSubmit }: AuthFormProps) {
             return;
         } else {
             try {
-                const payload = JSON.stringify(data, null, 2)
+                const payload: any = JSON.stringify(data, null, 2)
                 await onSubmit(payload);
 
                 console.log(`${isLogin ? "Login" : "Registration"} successful`);

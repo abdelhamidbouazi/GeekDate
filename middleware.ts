@@ -5,7 +5,7 @@ import { deleteToken } from "./app/actions";
 
 export async function middleware(request: NextRequest) {
   const cookie = await request.cookies.get("token");
-  if (!cookie && (request.nextUrl.pathname !== "/login" && request.nextUrl.pathname !== "/register")) 
+  if (!cookie && (request.nextUrl.pathname !== "/login" && request.nextUrl.pathname !== "/register" && request.nextUrl.pathname !== "/")) 
     return await NextResponse.redirect(new URL("/login", request.nextUrl));
   // if (cookie && request.nextUrl.pathname === '/login'){
   //   return await NextResponse.redirect(new URL('/browse', request.nextUrl))
