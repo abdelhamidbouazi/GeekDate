@@ -51,8 +51,8 @@ function page() {
             const response = await postLogin(loginPayload);
             const userData: any = response.data;
             dispatch(setUser(userData));
-            toast.success('Logged successfully');
             router.push('/browse');
+            toast.success('Logged successfully');
         } catch (err: any) {
             toast.error(`${err.response.data.message}`);
             console.log("response is ----> ", err.response.data.message);
