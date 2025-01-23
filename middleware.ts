@@ -7,7 +7,7 @@ const ProfileCompletion = "/complete-profile";
 const response = {
   isSucceeded: true,
   data: {
-    isProfileCompleted: true,
+    isProfileCompleted: false,
   },
 };
 
@@ -33,9 +33,10 @@ export async function middleware(request: NextRequest) {
         if (response.data.isProfileCompleted && (request.nextUrl.pathname === ProfileCompletion || authRoutes.includes(request.nextUrl.pathname))) {
           console.log("entring the if block");
           return NextResponse.redirect(new URL("/browse", request.nextUrl));
-        } else if ( request.nextUrl.pathname !== ProfileCompletion && !response.data.isProfileCompleted) {
-          return NextResponse.redirect(new URL("/complete-profile", request.nextUrl));
-        }
+        } 
+      }
+      if (response.isSucceeded && request.nextUrl.pathname !== ProfileCompletion && !response.data.isProfileCompleted ) {
+        return NextResponse.redirect(new URL("/complete-profile", request.nextUrl));
       }
     } catch (error) {
       if (cookie) await deleteToken();
