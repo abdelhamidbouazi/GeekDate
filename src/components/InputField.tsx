@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react";
-import { Input } from "@nextui-org/react";
+import { Input } from "@heroui/react";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "./icons/eyes";
 
 interface InputFieldProps {

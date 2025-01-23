@@ -48,19 +48,40 @@
 			"typeName": "page"
 		},
 		{
+			"x": 139.90109374999997,
+			"y": 130.1184987229915,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:o1qNquVd2D8KVZemzf83v",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "m",
+				"w": 345.328125,
+				"text": "middleware: validate token",
+				"font": "draw",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1
+			},
+			"parentId": "page:page",
+			"index": "a1",
+			"typeName": "shape"
+		},
+		{
 			"id": "pointer:pointer",
 			"typeName": "pointer",
-			"x": 376.26046875,
-			"y": 309.2434987229915,
-			"lastActivityTimestamp": 1737392026492,
+			"x": 186.22921874999997,
+			"y": 193.1731862229915,
+			"lastActivityTimestamp": 1737669275885,
 			"meta": {}
 		},
 		{
 			"followingUserId": null,
 			"opacityForNextShape": 1,
-			"stylesForNextShape": {
-				"tldraw:geo": "rectangle"
-			},
+			"stylesForNextShape": {},
 			"brush": null,
 			"scribbles": [],
 			"cursor": {
@@ -74,8 +95,8 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 714,
-				"h": 685
+				"w": 738,
+				"h": 743
 			},
 			"insets": [
 				false,
@@ -103,10 +124,10 @@
 			"typeName": "instance"
 		},
 		{
-			"editingShapeId": null,
+			"editingShapeId": "shape:8GIqUwV6b50fiKVejGjOP",
 			"croppingShapeId": null,
 			"selectedShapeIds": [
-				"shape:o1qNquVd2D8KVZemzf83v"
+				"shape:8GIqUwV6b50fiKVejGjOP"
 			],
 			"hoveredShapeId": null,
 			"erasingShapeIds": [],
@@ -118,34 +139,34 @@
 			"typeName": "instance_page_state"
 		},
 		{
-			"x": -44.15109374999997,
-			"y": -91.36849872299152,
+			"x": -74.35421874999997,
+			"y": -28.05599872299149,
 			"z": 1,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
 		},
 		{
-			"x": 270.69015625,
-			"y": 383.3567799729915,
+			"x": 139.90109374999997,
+			"y": 168.1263112229915,
 			"rotation": 0,
 			"isLocked": false,
 			"opacity": 1,
 			"meta": {},
-			"id": "shape:o1qNquVd2D8KVZemzf83v",
+			"id": "shape:8GIqUwV6b50fiKVejGjOP",
 			"type": "text",
 			"props": {
 				"color": "black",
 				"size": "m",
-				"w": 345.328125,
-				"text": "middleware: validate token",
+				"w": 225.5,
+				"text": "profile completion",
 				"font": "draw",
 				"textAlign": "start",
 				"autoSize": true,
 				"scale": 1
 			},
 			"parentId": "page:page",
-			"index": "a1",
+			"index": "a2BZ1",
 			"typeName": "shape"
 		}
 	]

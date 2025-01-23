@@ -2,9 +2,9 @@
 
 import { Provider } from 'react-redux';
 import {store} from './store';
-import {NextUIProvider} from "@nextui-org/react";
+import {HeroUIProvider} from "@heroui/react";
 
 
 export function RootProvider({ children }: { children: React.ReactNode }) {
-  return <NextUIProvider><Provider store={store}>{children}</Provider></NextUIProvider>;
+  return <HeroUIProvider><Provider store={store}>{children}</Provider></HeroUIProvider>;
 }

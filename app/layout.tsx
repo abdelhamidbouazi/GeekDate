@@ -5,7 +5,7 @@ import Navbar from "./Navbar";
 import { RootProvider } from "@/src/redux/provider";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react";
-import { Spinner } from "@nextui-org/react";
+import { Spinner } from "@heroui/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

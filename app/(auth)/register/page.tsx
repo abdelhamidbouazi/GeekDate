@@ -7,7 +7,7 @@ import AuthForm from '@/src/components/AuthForm';
 import { postRegister } from '@/src/services/auth';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { Image, LinkIcon, useSelect } from '@nextui-org/react';
+import { Image, LinkIcon, useSelect } from "@heroui/react";
 
 function page() {
     // const handleRegisterSubmit = async (data: Record<string, string>) => {

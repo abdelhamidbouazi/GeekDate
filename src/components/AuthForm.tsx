@@ -1,10 +1,10 @@
 'use client'
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Button, Checkbox, Form } from "@nextui-org/react";
+import { Button, Checkbox, Form } from "@heroui/react";
 import InputField from "./InputField";
 import toast from "react-hot-toast";
-import { Input } from "@nextui-org/react";
+import { Input } from "@heroui/react";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "./icons/eyes";
 
 interface AuthFormProps {
@@ -55,7 +55,7 @@ export default function AuthForm({ isLogin, onSubmit }: AuthFormProps) {
     };
 
     return (
-        <Form className="flex flex-col gap-3 w-full max-w-full " onSubmit={handleSubmit}>
+        (<Form className="flex flex-col gap-3 w-full max-w-full " onSubmit={handleSubmit}>
             {!isLogin && (
                 <>
                     <InputField
@@ -157,6 +157,6 @@ export default function AuthForm({ isLogin, onSubmit }: AuthFormProps) {
             <Button type="submit" className="w-full" color="primary" isLoading={Loading}>
                 {isLogin ? "Sign in" : "Register"}
             </Button>
-        </Form>
+        </Form>)
     );
 }
