@@ -116,18 +116,18 @@ export default function AuthForm({ isLogin, onSubmit }: AuthFormProps) {
             <Input
                 isRequired
                 endContent={
-                  <button
-                    aria-label="toggle password visibility"
-                    className="focus:outline-none"
-                    type="button"
-                    onClick={toggleVisibility}
-                  >
-                    {isVisible ? (
-                      <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-                    ) : (
-                      <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-                    )}
-                  </button>
+                    <button
+                        aria-label="toggle password visibility"
+                        className="focus:outline-none"
+                        type="button"
+                        onClick={toggleVisibility}
+                    >
+                        {isVisible ? (
+                            <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                        ) : (
+                            <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                        )}
+                    </button>
                 }
                 type={isVisible ? "text" : "password"}
                 variant="bordered"
@@ -136,11 +136,11 @@ export default function AuthForm({ isLogin, onSubmit }: AuthFormProps) {
                 value={password}
                 name="password"
                 onValueChange={setPassword}
-                // validate={(value) =>
-                //     value.length < 4
-                //         ? "Password must be at least 4 characters long"
-                //         : null
-                // }
+            // validate={(value) =>
+            //     value.length < 4
+            //         ? "Password must be at least 4 characters long"
+            //         : null
+            // }
             />
             {isLogin && (
                 <div className="flex items-center justify-between">

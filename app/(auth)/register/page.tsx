@@ -31,7 +31,7 @@ function page() {
             router.push('/login');
         } catch (err: any) {
             toast.error(`${err.response.data.message}`);
-            console.log("response is ----> ", err.response.data.message)
+            console.log("response in handleRegisterSubmit is ----> ", err.response.data.message)
         }
     };
     

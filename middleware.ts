@@ -1,46 +1,50 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import axiosInstance from "./src/lib/axios";
 import { deleteToken } from "./app/actions";
 
-const authRoutes = ["/login", "/register", "/complete-profile"];
+const authRoutes = ["/register", "/login"];
+const ProfileCompletion = "/complete-profile";
+const response = {
+  isSucceeded: true,
+  data: {
+    isProfileCompleted: true,
+  },
+};
 
 export async function middleware(request: NextRequest) {
+  console.log("entring the middleware");
   const cookie = await request.cookies.get("token");
   if (!cookie && !authRoutes.includes(request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL("/login", request.nextUrl));
-  } else if (cookie) {
+  }
+  if (cookie) {
     try {
-      const response = await axiosInstance.post("/api/Account/validate-token", cookie.value);
-      // const response = await axiosInstance.post("/api/Account/validate-token", {
-      //   token: cookie.value,
-      //   headers: {
-      //     Authorization: `Bearer ${cookie.value}`,
-      //   },
-      // });
+      // const response = await axiosInstance.get("/api/Account/validate-token", cookie.value);
       console.log("------->>>>the response is -------->>>>>    ", response);
-      if (authRoutes.includes(request.nextUrl.pathname)) {
-        return NextResponse.redirect(new URL("/browse", request.nextUrl));
+      if (!response.isSucceeded) {
+        console.log("Token verification failed");
+        throw new Error("Token verification failed");
       }
-      // if (response.isSucceeded && !authRoutes.includes(request.nextUrl.pathname)) {
-      //   // console.log("Token verification response: ", response);
-      //   if (response.data.isProfileCompleted) {
-      //     return NextResponse.redirect(new URL("/browse", request.nextUrl));
-      //   } else if (request.nextUrl.pathname !== "/complete-profile" && !response.data.isProfileCompleted) {
-      //     return NextResponse.redirect(new URL("/complete-profile", request.nextUrl));
-      //   }
-      // } else {
-      //   console.log("Token verification error: ", response);
-      // }
+      if (
+        response.isSucceeded &&
+        (request.nextUrl.pathname === ProfileCompletion || authRoutes.includes(request.nextUrl.pathname))
+      ) {
+        console.log("1111")
+        if (response.data.isProfileCompleted && (request.nextUrl.pathname === ProfileCompletion || authRoutes.includes(request.nextUrl.pathname))) {
+          console.log("entring the if block");
+          return NextResponse.redirect(new URL("/browse", request.nextUrl));
+        } else if ( request.nextUrl.pathname !== ProfileCompletion && !response.data.isProfileCompleted) {
+          return NextResponse.redirect(new URL("/complete-profile", request.nextUrl));
+        }
+      }
     } catch (error) {
-      await deleteToken();
-      if (request.nextUrl.pathname !== "/login") {
-        console.log("Token verification error: ", error);
+      if (cookie) await deleteToken();
+      if (!authRoutes.includes(request.nextUrl.pathname)) {
+        console.log("You must login first", error);
         return NextResponse.redirect(new URL("/login", request.nextUrl));
       }
     }
   }
-  return NextResponse.next();
 }
 export const config = {
   matcher: [

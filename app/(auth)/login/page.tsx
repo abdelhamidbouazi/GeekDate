@@ -55,7 +55,7 @@ function page() {
             toast.success('Logged successfully');
         } catch (err: any) {
             toast.error(`${err.response.data.message}`);
-            console.log("response is ----> ", err.response.data.message);
+            console.log("response in handleLoginSubmit is ----> ", err.response.data.message);
         }
     };
     return (

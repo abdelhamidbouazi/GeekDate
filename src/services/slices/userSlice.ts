@@ -18,8 +18,7 @@ const userSlice = createSlice({
       if (token) {
         setToken(token);
       }
-      console.log("moved from userSlice")
-      console.log("action.payload", action.payload)
+      console.log("moved from userSlice, action.payload", action.payload)
       return { ...state, ...action.payload };
     },
     clearUser() {
