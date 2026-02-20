@@ -1,0 +1,426 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ChevronLeft, ChevronRight, Upload } from "lucide-react"
+import { authApi } from "@/lib/auth"
+import { api } from "@/lib/api"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+
+type Step = "loading" | "verify-email" | "basic-profile" | "preferences"
+
+const GENDER_OPTIONS = [
+  { value: "1", label: "Male" },
+  { value: "2", label: "Female" },
+]
+
+const PREFERRED_GENDER_OPTIONS = [
+  { value: "0", label: "None" },
+  { value: "1", label: "Male" },
+  { value: "2", label: "Female" },
+  { value: "3", label: "Unknown" },
+]
+
+interface InterestItem {
+  id?: string
+  Id?: string
+  name?: string
+}
+
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export default function VerifyPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [step, setStep] = useState<Step>("loading")
+  const [error, setError] = useState("")
+
+  // Basic profile state (Step 1)
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [gender, setGender] = useState("0")
+  const [mainPicture, setMainPicture] = useState<File | null>(null)
+  const [extraPictures, setExtraPictures] = useState<FileList | null>(null)
+
+  // Preferences state (Step 2)
+  const [preferredGender, setPreferredGender] = useState("0")
+  const [biography, setBiography] = useState("")
+  const [selectedInterestIds, setSelectedInterestIds] = useState<string[]>([])
+  const [interests, setInterests] = useState<InterestItem[]>([])
+
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [verifyLoading, setVerifyLoading] = useState(false)
+
+  useEffect(() => {
+    async function init() {
+      if (typeof window === "undefined") return
+      const token = localStorage.getItem("accessToken")
+      if (!token) {
+        router.replace("/login")
+        return
+      }
+
+      const userId = searchParams.get("userId")
+      const codeParam = searchParams.get("code") ?? searchParams.get("token")
+
+      if (userId && codeParam) {
+        try {
+          await authApi.confirmEmail(userId, codeParam)
+        } catch {
+          setError("Failed to verify email")
+        }
+      }
+
+      try {
+        const res = await authApi.validateToken() as { emailVerified?: boolean; profileCompleted?: boolean }
+        const emailVerified = res?.emailVerified ?? false
+        const profileCompleted = res?.profileCompleted ?? false
+
+        if (emailVerified && profileCompleted) {
+          router.replace("/browse")
+          return
+        }
+        if (!emailVerified) {
+          setStep("verify-email")
+        } else {
+          setStep("basic-profile")
+          fetchInterests()
+        }
+      } catch {
+        router.replace("/login")
+      }
+    }
+    init()
+  }, [router, searchParams])
+
+  async function fetchInterests() {
+    try {
+      const res = await api.get<{ data?: InterestItem[] } | InterestItem[]>("/api/Interest/GetAll")
+      const list = Array.isArray(res) ? res : res?.data ?? []
+      setInterests(list)
+    } catch {
+      setInterests([])
+    }
+  }
+
+  async function handleIveVerified() {
+    setVerifyLoading(true)
+    setError("")
+    try {
+      const res = await authApi.validateToken() as { emailVerified?: boolean; profileCompleted?: boolean }
+      if (res?.emailVerified) {
+        setStep("basic-profile")
+        await fetchInterests()
+      } else {
+        setError("Email not verified yet. Please click the link in your email.")
+      }
+    } catch {
+      setError("Failed to check verification status")
+    } finally {
+      setVerifyLoading(false)
+    }
+  }
+
+  async function handleBasicProfileSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    if (!mainPicture) {
+      setError("Please upload a main picture")
+      return
+    }
+    if (gender === "0") {
+      setError("Please select your gender")
+      return
+    }
+    setProfileLoading(true)
+    try {
+      const form = new FormData()
+      form.append("MainPicture", mainPicture)
+      if (dateOfBirth) form.append("DateOfBirth", new Date(dateOfBirth).toISOString())
+      form.append("Gender", gender)
+      if (extraPictures) {
+        for (let i = 0; i < extraPictures.length; i++) {
+          form.append("Photos", extraPictures[i])
+        }
+      }
+      await api.putFormData<unknown>("/api/UserProfile/complete-basic-profile", form)
+      setStep("preferences")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save basic profile")
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  async function handlePreferencesSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    const allPictures: File[] = mainPicture ? [mainPicture] : []
+    if (extraPictures) {
+      for (let i = 0; i < Math.min(extraPictures.length, 4); i++) {
+        allPictures.push(extraPictures[i])
+      }
+    }
+    if (allPictures.length === 0) {
+      setError("Please add at least one picture")
+      return
+    }
+    const validIds = selectedInterestIds.filter((id) => GUID_REGEX.test(id))
+    if (validIds.length === 0) {
+      setError("Please select at least one interest")
+      return
+    }
+    setProfileLoading(true)
+    try {
+      const form = new FormData()
+      form.append("Biography", biography)
+      form.append("PreferredGender", preferredGender)
+      form.append("Gender", gender)
+      validIds.forEach((id) => form.append("UserInterestIds", id))
+      allPictures.forEach((file) => form.append("Pictures", file))
+      await api.putFormData<unknown>("/api/UserProfile/complete-preferences", form)
+      router.replace("/browse")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to complete profile")
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  function toggleInterest(id: string) {
+    setSelectedInterestIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  if (step === "loading") {
+    return (
+      <div className="bg-muted flex min-h-svh items-center justify-center p-6">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
+  }
+
+  if (step === "verify-email") {
+    return (
+      <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+        <div className="w-full max-w-sm">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">Verify your email</CardTitle>
+              <CardDescription>
+                We sent a confirmation link to your email. Click it to verify your account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <Button onClick={handleIveVerified} disabled={verifyLoading}>
+                {verifyLoading ? "Checking..." : "I've verified"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === "basic-profile") {
+    return (
+      <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="text-muted-foreground mb-1 text-sm font-medium">Step 1 of 2</div>
+              <CardTitle className="text-xl">Basic profile</CardTitle>
+              <CardDescription>
+                Add your photo and basic info
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleBasicProfileSubmit}>
+                <FieldGroup>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Field>
+                    <FieldLabel htmlFor="mainPicture">Main picture</FieldLabel>
+                    <div className="border-input flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8">
+                      <Upload className="text-muted-foreground mb-2 size-10" />
+                      <Label htmlFor="mainPicture" className="cursor-pointer text-sm font-medium">
+                        <span className="text-primary underline">Choose file</span>
+                        {" "}or drag and drop
+                      </Label>
+                      <Input
+                        id="mainPicture"
+                        type="file"
+                        accept="image/*"
+                        className="mt-2 hidden"
+                        onChange={(e) => setMainPicture(e.target.files?.[0] || null)}
+                      />
+                      {mainPicture && (
+                        <p className="text-muted-foreground mt-1 text-xs">{mainPicture.name}</p>
+                      )}
+                    </div>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="dateOfBirth">Date of birth</FieldLabel>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Gender</FieldLabel>
+                    <Select value={gender} onValueChange={setGender}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select your gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GENDER_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="extraPictures">Extra photos (up to 4)</FieldLabel>
+                    <Input
+                      id="extraPictures"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => setExtraPictures(e.target.files)}
+                    />
+                  </Field>
+                  <Button type="submit" disabled={profileLoading} className="w-full">
+                    {profileLoading ? "Saving..." : "Continue"}
+                  </Button>
+                </FieldGroup>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <div className="w-full max-w-md">
+        <Card>
+          <CardHeader className="text-center">
+            <div className="text-muted-foreground mb-1 text-sm font-medium">Step 2 of 2</div>
+            <CardTitle className="text-xl">Preferences</CardTitle>
+            <CardDescription>
+              Tell us about yourself and your interests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePreferencesSubmit}>
+              <FieldGroup>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <Field>
+                  <FieldLabel htmlFor="biography">Bio</FieldLabel>
+                  <textarea
+                    id="biography"
+                    className="border-input flex min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="Tell us about yourself"
+                    value={biography}
+                    onChange={(e) => setBiography(e.target.value)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel>Preferred gender</FieldLabel>
+                  <Select value={preferredGender} onValueChange={setPreferredGender}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Who are you interested in?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREFERRED_GENDER_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                {interests.length > 0 && (
+                  <Field>
+                    <FieldLabel>Interests (select at least 1)</FieldLabel>
+                    <div className="border-input rounded-md border p-3">
+                      <div className="flex flex-wrap gap-3">
+                        {interests.map((item) => {
+                          const id = item.id ?? item.Id ?? ""
+                          if (!id || !GUID_REGEX.test(id)) return null
+                          return (
+                            <label
+                              key={id}
+                              className="border-input flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-muted/50 has-checked:border-primary has-checked:bg-primary/5"
+                            >
+                              <Checkbox
+                                checked={selectedInterestIds.includes(id)}
+                                onCheckedChange={() => toggleInterest(id)}
+                              />
+                              <span>{item.name ?? id}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </Field>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep("basic-profile")}
+                    className="flex-1"
+                  >
+                    <ChevronLeft className="mr-1 size-4" />
+                    Back
+                  </Button>
+                  <Button type="submit" disabled={profileLoading} className="flex-1">
+                    {profileLoading ? "Saving..." : "Complete"}
+                    <ChevronRight className="ml-1 size-4" />
+                  </Button>
+                </div>
+              </FieldGroup>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

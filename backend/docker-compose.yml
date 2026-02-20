@@ -1,0 +1,87 @@
+# version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: matcha-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD:-YourPassword123!}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - matcha_db_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - matcha-network
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: matcha-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=sqlserver
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - matcha-network
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: matcha-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - ASPNETCORE_HTTP_PORTS=80
+      - DatabaseProvider=SqlServer
+      - SqlMode=Docker
+      - ConnectionStrings__SqlDocker=Server=sqlserver;Database=${SQL_DATABASE:-matchadb};User Id=sa;Password=${SQL_SA_PASSWORD:-YourPassword123!};TrustServerCertificate=True;MultipleActiveResultSets=True
+      - Jwt__Secret=${JWT_SECRET:-MzKJF4KTMah53SJzI1dhcSbQOR0G71mTlMwpYiPKpLZJEuXQyb0LXOf0LxflqR4T}
+      - Jwt__Issuer=${JWT_ISSUER:-matcha}
+      - Jwt__Audience=${JWT_AUDIENCE:-account}
+      - Jwt__ExpirationInDays=${JWT_EXPIRATION_DAYS:-100}
+      - SmtpSettings__SmtpServer=${SMTP_SERVER:-smtp.gmail.com}
+      - SmtpSettings__Port=${SMTP_PORT:-587}
+      - SmtpSettings__EnableSsl=${SMTP_ENABLE_SSL:-true}
+      - SmtpSettings__Email=${SMTP_EMAIL:-matchaapp007@gmail.com}
+      - SmtpSettings__Password=${SMTP_PASSWORD:-nbdolgujixoillqj}
+      - CloudinarySettings__CloudName=${CLOUDINARY_CLOUD_NAME:-dhhorsh6w}
+      - CloudinarySettings__ApiKey=${CLOUDINARY_API_KEY:-395942843876426}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET:-dztELpZ1zORszw2ZJKdNtmQi5Vg}
+      - AppSettings__BaseUri=${APP_BASE_URI:-https://striking-insight-production.up.railway.app/}
+      - AppSettings__FrontUri=${APP_FRONT_URI:-https://matcha-dating.vercel.app}
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - matcha-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/swagger || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  matcha_db_data:
+    driver: local
+
+networks:
+  matcha-network:
+    driver: bridge
+

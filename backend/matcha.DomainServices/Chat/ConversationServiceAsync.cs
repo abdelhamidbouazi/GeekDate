@@ -1,0 +1,78 @@
+﻿using matcha.Application.Exceptions;
+using matcha.Application.Interfaces.Repositories;
+using matcha.Application.Interfaces.Services;
+using matcha.Application.Interfaces.Services.Authentication;
+using matcha.Application.Interfaces.UoW;
+using matcha.Domain.Entities;
+
+namespace matcha.DomainServices.Chat
+{
+    public class ConversationServiceAsync : IConversationServiceAsync
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuthenticatedUser _authenticatedUser;
+        private readonly IMatchServiceAsync _matchServiceAsync;
+        public ConversationServiceAsync(IUnitOfWork unitOfWork, IAuthenticatedUser authenticatedUser, IMatchServiceAsync matchServiceAsync)
+        {
+            _unitOfWork = unitOfWork;
+            _authenticatedUser = authenticatedUser;
+            _matchServiceAsync = matchServiceAsync;
+        }
+        public async Task<Conversation> GetConversationBetweenUsersAsync(Guid user1Id, Guid user2Id)
+        {
+            if (user1Id == user2Id)
+                throw new ApiException("Invalid operation");
+
+            var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>().GetConversationBetweenUsersAsync(user1Id, user2Id);
+
+            if (conversation == null)
+                throw new ApiException("Conversation not found.");
+
+            return conversation;
+        }
+
+        public async Task<Conversation> CreateConversationWithUserAsync(Guid userId)
+        {
+            var authenticatedUser = await _authenticatedUser.GetAuthenticatedAsync();
+
+            if (authenticatedUser == null)
+                throw new ApiException("Unauthorized operation.");
+
+            if (authenticatedUser.Id == userId)
+                throw new ApiException("Invalid operation");
+
+            var userLikeRepository = _unitOfWork.GetRepository<IUserLikesRepositoryAsync>();
+
+            var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(authenticatedUser.Id, userId);
+
+            if (!isMatched)
+                throw new ApiException("Users are not matched. Cannot create conversation.");
+
+            var conversationRepository = _unitOfWork.GetRepository<IConversationRepositoryAsync>();
+
+            var existingConversation = await conversationRepository.GetConversationBetweenUsersAsync(authenticatedUser.Id, userId);
+
+            if (existingConversation != null)
+                throw new ApiException("Conversation already exists.");
+
+            var conversation = new Conversation
+            {
+                User1Id = authenticatedUser.Id,
+                User2Id = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            return await _unitOfWork.GetRepository<IConversationRepositoryAsync>().AddAsync(conversation);
+        }
+
+        public async Task<bool> DeleteConversationAsync(Guid conversationId)
+        {
+            var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>().FindAsync(conversationId);
+
+            if (conversation == null)
+                throw new ApiException("Conversation not found.");
+
+            return await _unitOfWork.GetRepository<IConversationRepositoryAsync>().Delete(conversation) > 0;
+        }
+    }
+}
