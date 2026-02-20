@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 5, "column": 0}, "map": {"version":3,"sources":["file:///Users/opuus/Desktop/1337/matcha/app/actions.ts"],"sourcesContent":["'use server'\n \nimport { cookies } from 'next/headers'\n \nexport async function setToken(token: string) {\n    const cookieStore = await cookies()\n\n    cookieStore.set('token', token)\n}\nexport async function deleteToken() {\n    const cookieStore = await cookies()\n    \n    cookieStore.delete('token')\n  }"],"names":[],"mappings":";;;;;AAEA;;;;AAEO,eAAe,SAAS,KAAa;IACxC,MAAM,cAAc,MAAM,CAAA,GAAA,+HAAA,CAAA,UAAO,AAAD;IAEhC,YAAY,GAAG,CAAC,SAAS;AAC7B;AACO,eAAe;IAClB,MAAM,cAAc,MAAM,CAAA,GAAA,+HAAA,CAAA,UAAO,AAAD;IAEhC,YAAY,MAAM,CAAC;AACrB;;;IAToB;IAKA;;AALA,+OAAA;AAKA,+OAAA","debugId":null}},
+    {"offset": {"line": 33, "column": 0}, "map": {"version":3,"sources":["file:///Users/opuus/Desktop/1337/matcha/.next-internal/server/app/_not-found/page/actions.js%20%28server%20actions%20loader%29"],"sourcesContent":["export {setToken as '4033e29c1e1bfef86e61461f2673c0a0df128fe4a7'} from 'ACTIONS_MODULE0'\n"],"names":[],"mappings":";AAAA","debugId":null}}]
+}
