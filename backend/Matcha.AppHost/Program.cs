@@ -12,3 +12,4 @@ var api = builder.AddProject("matcha-api", "../matcha.API/matcha.API.csproj")
     .WithReference(db);
 
 builder.Build().Run();
+

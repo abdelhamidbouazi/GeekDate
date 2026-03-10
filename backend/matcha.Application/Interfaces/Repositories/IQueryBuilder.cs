@@ -26,5 +26,7 @@ namespace matcha.Application.Interfaces.Repositories
         IQueryBuilder<T> Update(Dictionary<string, object> columnValues);
         IQueryBuilder<T> Update(T entity);
         IQueryBuilder<T> Where(ICondition whereCondition);
+        IQueryBuilder<T> Take(int count);
+        IQueryBuilder<T> Skip(int count);
     }
 }

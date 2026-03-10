@@ -12,7 +12,7 @@ namespace matcha.Application.Specifications
         public double? MaxDistanceKm { get; set; }
         public List<Guid>? FilterByTagIds { get; set; }
         public List<Guid>? ExcludedUserIds { get; set; }
-        public BrowseSortBy SortBy { get; set; } = BrowseSortBy.Distance;
+        public BrowseSortBy SortBy { get; set; } = BrowseSortBy.Distance;  
         public bool SortDescending { get; set; } = false;
         public Guid ExcludeUserId { get; set; }
         public List<Gender> PreferredGenders { get; set; } = new();

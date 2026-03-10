@@ -1,4 +1,5 @@
-﻿using matcha.Application.Helper;
+﻿using matcha.Application.Dtos.Common;
+using matcha.Application.Helper;
 using matcha.Application.Interfaces.Repositories;
 using matcha.Application.Interfaces.Services.Database;
 using matcha.Infrastructure.Helpers;
@@ -163,6 +164,70 @@ namespace matcha.Infrastructure.ReposUsingCustomQueryBuilder
                 await _database.ExecuteNonQueryAsync(query, _builder.GetParameters());
             }
             return entities.Count();
+        }
+
+        public async Task<PaginatedResult<T>> GetPagedAsync(int pageNumber, int pageSize, string orderBy = "Id Desc")
+        {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            _builder.ClearAll();
+            var countQuery = _builder.Count("*", "").Build();
+
+            _builder.ClearAll();
+            var dataQuery = _builder
+                .Select()
+                .OrderBy(orderBy)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Build();
+
+            var (items, totalCount) = await _database.QueryPagedAsync<T>(dataQuery, countQuery, _builder.GetParameters());
+
+            return new PaginatedResult<T>
+            {
+                Data = items,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+
+        }
+
+        public async Task<PaginatedResult<T>> GetPagedAsync(Expression<Func<T, bool>> predicate, int pageNumber, int pageSize, string orderBy = "Id Desc")
+        {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 1;
+            if (pageSize > 100) pageSize = 100;
+
+            var sqlWhereClause = _expressionVisitor.GetWhereClause(predicate);
+            var condition = new Condition(sqlWhereClause, GetSqlParameters(_expressionVisitor.GetParameters()));
+
+
+            _builder.ClearAll();
+            var countQuery = _builder
+                    .Count("*", "")
+                    .Build();
+
+            _builder.ClearAll();
+            var dataQuery = _builder
+                .Select()
+                .Where(condition)
+                .OrderBy(orderBy)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Build();
+
+            var (items, totalCount) = await _database.QueryPagedAsync<T>(dataQuery, countQuery, _builder.GetParameters());
+
+            return new PaginatedResult<T>
+            {
+                Data = items,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
         }
     }
 }

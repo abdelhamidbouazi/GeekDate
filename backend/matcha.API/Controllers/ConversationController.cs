@@ -1,5 +1,6 @@
 ﻿using matcha.Application.Interfaces.Services;
 using matcha.Application.Interfaces.Services.Authentication;
+using matcha.Application.ResponseWrappers;
 using matcha.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,16 @@ namespace matcha.API.Controllers
         {
             _conversationServiceAsync = conversationServiceAsync;
             _authenticatedUser = authenticatedUser;
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetUserConversations()
+        {
+            var userId = _authenticatedUser.UserId;
+            var conversations = await _conversationServiceAsync.GetUserConversationsAsync(userId);
+
+            return Ok(new Response<IReadOnlyCollection<Conversation>>(conversations));
         }
 
         [HttpGet("with/{userId}")]

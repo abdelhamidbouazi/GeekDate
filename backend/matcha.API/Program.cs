@@ -5,6 +5,7 @@ using matcha.Application.Interfaces.Services.Authentication;
 using matcha.Application.MappingProfile;
 using matcha.DomainServices.Extensions;
 using matcha.Infrastructure.Extensions;
+using matcha.Infrastructure.Hubs;
 using matcha.Infrastructure.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
@@ -62,6 +63,12 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -75,7 +82,9 @@ app.ApplyMigration();
 
 app.UseCors(builder => builder.AllowAnyHeader()
      .AllowAnyMethod()
-     .WithOrigins("http://localhost:3001", "https://matcha-dating.vercel.app", "http://localhost:3000"));
+     .AllowCredentials()
+     .WithOrigins("http://localhost:3000", "https://matcha-dating.vercel.app"));
+
 
 app.UseHttpsRedirection();
 
@@ -85,6 +94,8 @@ app.UseAuthorization();
 
 
 app.MapControllers();
+
+app.MapHub<ChatHub>("/chatHub");
 
 using (var scope = app.Services.CreateScope())
 {

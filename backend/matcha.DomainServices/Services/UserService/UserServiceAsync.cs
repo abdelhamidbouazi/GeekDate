@@ -6,6 +6,7 @@ using matcha.Application.Interfaces.Services;
 using matcha.Application.Interfaces.Services.Authentication;
 using matcha.Application.Interfaces.Services.Cloudinary;
 using matcha.Application.Interfaces.UoW;
+using matcha.Domain.Common.Enums;
 using matcha.Domain.Entities;
 using matcha.Shared.Constants;
 using Microsoft.AspNetCore.Http;
@@ -18,12 +19,14 @@ namespace matcha.DomainServices.Services.UserService
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICloudinaryServiceAsync _cloudinaryServiceAsync;
         private readonly IAuthenticatedUser _authenticatedUser;
+        private readonly IRealtimeNotificationServiceAsync _notificationService;
 
-        public UserServiceAsync(IUnitOfWork unitOfWork, ICloudinaryServiceAsync cloudinaryServiceAsync, IAuthenticatedUser authenticatedUser)
+        public UserServiceAsync(IUnitOfWork unitOfWork, ICloudinaryServiceAsync cloudinaryServiceAsync, IAuthenticatedUser authenticatedUser, IRealtimeNotificationServiceAsync notificationService)
         {
             _unitOfWork = unitOfWork;
             _cloudinaryServiceAsync = cloudinaryServiceAsync;
-            this._authenticatedUser = authenticatedUser;
+            _authenticatedUser = authenticatedUser;
+            _notificationService = notificationService;
         }
 
         public async Task<AppUser> GetUserByIdAsync(Guid userId)
@@ -230,6 +233,10 @@ namespace matcha.DomainServices.Services.UserService
                 }
 
                 await _unitOfWork.CommitTransaction();
+
+                await _notificationService.SendNotificationAsync(
+                    profileId, _authenticatedUser.UserId, NotificationType.ProfileVisit);
+
                 return true;
             }
             catch (Exception ex)
@@ -332,11 +339,12 @@ namespace matcha.DomainServices.Services.UserService
 
             await repo.AddAsync(like);
             await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
+
+            await _notificationService.SendNotificationAsync(likedId, likerId, NotificationType.Like);
         }
 
         private async Task TryCreateMatchAsync(IGenericRepoAsync<UserLike> repo, UserLike like, Guid currentUserId, Guid targetUserId)
         {
-            // MATCH only if the existing like is FROM target TO current
             if (like.LikerUserId != targetUserId || like.LikedUserId != currentUserId)
                 return;
 
@@ -360,6 +368,10 @@ namespace matcha.DomainServices.Services.UserService
                 User2Id = targetUserId,
                 MatchedAt = DateTime.UtcNow
             });
+
+            // Notify both users of the match
+            await _notificationService.SendNotificationAsync(targetUserId, currentUserId, NotificationType.Match);
+            await _notificationService.SendNotificationAsync(currentUserId, targetUserId, NotificationType.Match);
             //if ((like.LikerUserId == targetUserId && like.LikedUserId == currentUserId)
             //   || (like.LikerUserId == currentUserId && like.LikedUserId == targetUserId))
             //{

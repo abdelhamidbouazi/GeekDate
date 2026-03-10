@@ -12,6 +12,9 @@ namespace matcha.Application.Interfaces.Services.Database
         Task<int> ExecuteNonQueryAsync(string query, SqlParameter[] parameters);
         Task<int> ExecuteAsync(string query, SqlParameter[] parameters);
         Task<string> ExecuteScalarAsync(string query, SqlParameter[] parameters);
+        Task<(IReadOnlyList<T> Items, int TotalCount)> QueryPagedAsync<T>(string dataQuery, string countQuery, SqlParameter[] parameters) where T : class;
+        Task<(IReadOnlyList<T> Items, int TotalCount)> QueryPagedWithReaderAsync<T>(string dataQuery, string countQuery, SqlParameter[] parameters,
+            Func<SqlDataReader, Task<IReadOnlyList<T>>> mapFunc) where T : class;
         Task BeginTransactionAsync();
         Task RollbackTransactionAsync();
         Task CommitTransactionAsync();

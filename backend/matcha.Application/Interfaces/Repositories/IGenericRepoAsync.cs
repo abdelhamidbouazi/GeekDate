@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using matcha.Application.Dtos.Common;
+using System.Linq.Expressions;
 
 namespace matcha.Application.Interfaces.Repositories
 {
@@ -17,5 +18,17 @@ namespace matcha.Application.Interfaces.Repositories
         Task DeleteRange(IEnumerable<T> entities);
         Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
+
+        /// <summary>
+        /// Get paginited resukts withoiut filter
+        /// </summary>
+        Task<PaginatedResult<T>> GetPagedAsync(int pageNumber, int pageSize, string orderBy = "Id Desc");
+
+        /// <summary>
+        /// Get paginated results with filter
+        /// </summary>
+        Task<PaginatedResult<T>> GetPagedAsync(Expression<Func<T, bool>> predicate, int pageNumber, int pageSize, string orderBy = "Id Desc");
+
+
     }
 }

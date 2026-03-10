@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight, Upload } from "lucide-react"
 import { authApi } from "@/lib/auth"
 import { api } from "@/lib/api"
+import { browseApi } from "@/lib/browse-api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -52,7 +53,7 @@ interface InterestItem {
 
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export default function VerifyPage() {
+function VerifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<Step>("loading")
@@ -69,9 +70,28 @@ export default function VerifyPage() {
   const [biography, setBiography] = useState("")
   const [selectedInterestIds, setSelectedInterestIds] = useState<string[]>([])
   const [interests, setInterests] = useState<InterestItem[]>([])
+  const [interestsLoading, setInterestsLoading] = useState(false)
 
   const [profileLoading, setProfileLoading] = useState(false)
   const [verifyLoading, setVerifyLoading] = useState(false)
+
+  const fetchInterests = useCallback(async () => {
+    setInterestsLoading(true)
+    try {
+      const list = await browseApi.getInterests()
+      setInterests(
+        list.map((i) => ({
+          id: i.id ?? i.Id,
+          Id: i.Id ?? i.id,
+          name: i.name ?? i.Name,
+        }))
+      )
+    } catch {
+      setInterests([])
+    } finally {
+      setInterestsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     async function init() {
@@ -88,12 +108,21 @@ export default function VerifyPage() {
       if (userId && codeParam) {
         try {
           await authApi.confirmEmail(userId, codeParam)
+          sessionStorage.setItem("emailJustVerified", "1")
         } catch {
           setError("Failed to verify email")
         }
       }
 
       try {
+        const justVerified = sessionStorage.getItem("emailJustVerified")
+        if (justVerified) {
+          sessionStorage.removeItem("emailJustVerified")
+          setStep("basic-profile")
+          fetchInterests()
+          return
+        }
+
         const res = await authApi.validateToken() as { emailVerified?: boolean; profileCompleted?: boolean }
         const emailVerified = res?.emailVerified ?? false
         const profileCompleted = res?.profileCompleted ?? false
@@ -113,17 +142,15 @@ export default function VerifyPage() {
       }
     }
     init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchInterests is stable, init only needs router/searchParams
   }, [router, searchParams])
 
-  async function fetchInterests() {
-    try {
-      const res = await api.get<{ data?: InterestItem[] } | InterestItem[]>("/api/Interest/GetAll")
-      const list = Array.isArray(res) ? res : res?.data ?? []
-      setInterests(list)
-    } catch {
-      setInterests([])
+  // Fetch interests when entering preferences step (in case they weren't loaded yet)
+  useEffect(() => {
+    if (step === "preferences" && interests.length === 0) {
+      fetchInterests()
     }
-  }
+  }, [step, interests.length, fetchInterests])
 
   async function handleIveVerified() {
     setVerifyLoading(true)
@@ -376,13 +403,18 @@ export default function VerifyPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                {interests.length > 0 && (
-                  <Field>
-                    <FieldLabel>Interests (select at least 1)</FieldLabel>
-                    <div className="border-input rounded-md border p-3">
+                <Field>
+                  <FieldLabel>Interests (select at least 1)</FieldLabel>
+                  <div className="border-input rounded-md border p-3">
+                    {interestsLoading ? (
+                      <p className="text-muted-foreground text-sm">Loading interests...</p>
+                    ) : interests.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No interests available. Please try again later.</p>
+                    ) : (
                       <div className="flex flex-wrap gap-3">
                         {interests.map((item) => {
-                          const id = item.id ?? item.Id ?? ""
+                          const id = String(item.id ?? item.Id ?? "")
+                          const name = item.name ?? (item as { Name?: string }).Name ?? id
                           if (!id || !GUID_REGEX.test(id)) return null
                           return (
                             <label
@@ -393,14 +425,14 @@ export default function VerifyPage() {
                                 checked={selectedInterestIds.includes(id)}
                                 onCheckedChange={() => toggleInterest(id)}
                               />
-                              <span>{item.name ?? id}</span>
+                              <span>{name}</span>
                             </label>
                           )
                         })}
                       </div>
-                    </div>
-                  </Field>
-                )}
+                    )}
+                  </div>
+                </Field>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -422,5 +454,13 @@ export default function VerifyPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="bg-muted flex min-h-svh items-center justify-center p-6"><p className="text-muted-foreground">Loading...</p></div>}>
+      <VerifyContent />
+    </Suspense>
   )
 }

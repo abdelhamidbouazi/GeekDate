@@ -13,8 +13,10 @@ export interface BrowseUserDto {
 }
 
 export interface GetInterestsDto {
-  id: string;
-  name: string;
+  id?: string;
+  Id?: string;
+  name?: string;
+  Name?: string;
   users?: unknown[];
 }
 
@@ -91,8 +93,9 @@ export const browseApi = {
     api.post("/api/search/preferences/reset"),
 
   getInterests: async () => {
-    const res = await api.get<{ data?: GetInterestsDto[] }>("/api/Interest/GetAll");
-    return Array.isArray(res?.data) ? res.data : [];
+    const res = await api.get<{ data?: GetInterestsDto[]; Data?: GetInterestsDto[] }>("/api/Interest/GetAll");
+    const arr = res?.data ?? res?.Data;
+    return Array.isArray(arr) ? arr : [];
   },
 
   likeProfile: (userId: string) =>

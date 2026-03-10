@@ -21,6 +21,8 @@ export interface UserCardProps {
   fameRating: number
   onLike?: () => void
   onDislike?: () => void
+  /** When false, View Profile button won't link (e.g. when id is not a valid user GUID) */
+  profileLink?: boolean
 }
 
 export function UserCard({
@@ -37,7 +39,10 @@ export function UserCard({
   fameRating,
   onLike,
   onDislike,
+  profileLink = true,
 }: UserCardProps) {
+  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id))
+  const canLinkToProfile = profileLink && isGuid
   const [isHovered, setIsHovered] = useState(false)
 
   return (
@@ -146,16 +151,27 @@ export function UserCard({
           >
             <X className="size-5 sm:size-6 fill-current" />
           </Button>
-          <Button
-            size="icon"
-            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-lg backdrop-blur-md border-2 border-white/30 transition-transform active:scale-95"
-            aria-label="View Profile"
-            asChild
-          >
-            <Link href={`/users/${id}`}>
+          {canLinkToProfile ? (
+            <Button
+              size="icon"
+              className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-lg backdrop-blur-md border-2 border-white/30 transition-transform active:scale-95"
+              aria-label="View Profile"
+              asChild
+            >
+              <Link href={`/users/${id}`}>
+                <User className="size-5 sm:size-6 fill-current" />
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-lg backdrop-blur-md border-2 border-white/30 transition-transform active:scale-95"
+              aria-label="View Profile"
+              disabled
+            >
               <User className="size-5 sm:size-6 fill-current" />
-            </Link>
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
     </article>

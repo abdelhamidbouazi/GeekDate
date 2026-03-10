@@ -25,6 +25,8 @@ namespace matcha.Infrastructure.Extensions
             services.AddScoped<IUserSearchPreferenceRepositoryAsync, UserSearchPreferenceRepositoryAsync>();
             services.AddScoped<IConversationRepositoryAsync, ConversationRepositoryAsync>();
             services.AddScoped<IMatchRepositoryAsync, MatchRepositoryAsync>();
+            services.AddScoped<IMessageRepositoryAsync, MessageRepositoryAsync>();
+            services.AddScoped<INotificationRepositoryAsync, NotificationRepositoryAsync>();
 
             return services;
         }

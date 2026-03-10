@@ -13,6 +13,8 @@ namespace matcha.Infrastructure.Repositories
         private string _groupBy = "";
         private string _having = "";
         private string _where = "";
+        private string _skip = "";
+        private string _take = "";
         private List<Type> _tableTypes = new List<Type>();
         private List<SqlParameter> _parameters = new();
         private string _tableName = "";
@@ -226,7 +228,7 @@ namespace matcha.Infrastructure.Repositories
 
             var tableName = typeof(T).Name;
 
-            _query = $"UPDATE {tableName} SET ";
+            _query = $"UPDATE {tableName}s SET ";
 
             var setClause = string.Join(", ", columnValues.Select(kv => $"{kv.Key} = {FormatValue(kv.Value)}"));
 
@@ -243,7 +245,20 @@ namespace matcha.Infrastructure.Repositories
             _groupBy = string.Empty;
             _tableTypes = _tableTypes.Where(x => x == typeof(T)).ToList();
             _where = string.Empty;
+            _skip = string.Empty;
+            _take = string.Empty;
             _parameters.Clear();
+        }
+        public IQueryBuilder<T> Take(int count)
+        {
+            _take = $" FETCH NEXT {count} ROWS ONLY ";
+            return this;
+        }
+
+        public IQueryBuilder<T> Skip(int count)
+        {
+            _skip = $" OFFSET {count} ROWS ";
+            return this;
         }
         public IQueryBuilder<T> Update(T entity)
         {
@@ -279,7 +294,7 @@ namespace matcha.Infrastructure.Repositories
 
         public string Build()
         {
-            return $"{_query}{From(_tableName)} {_join} {_where} {_groupBy} {_orderBy} {_having}";
+            return $"{_query}{From(_tableName)} {_join} {_where} {_groupBy} {_having} {_orderBy} {_skip} {_take} ";
         }
         public string BuildCommand() => $"{_query} {_where}";
     }

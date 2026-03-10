@@ -13,7 +13,7 @@
         {
             Message = message;
             IsSucceeded = isSucceeded;
-
+            StatusCode = isSucceeded ? 200 : 400;
         }
 
         public bool IsSucceeded { get; set; }

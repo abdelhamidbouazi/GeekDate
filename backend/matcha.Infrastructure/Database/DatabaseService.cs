@@ -222,5 +222,98 @@ namespace matcha.Infrastructure.Database
 
             return results;
         }
+
+        public async Task<(IReadOnlyList<T> Items, int TotalCount)> QueryPagedAsync<T>(string dataQuery, string countQuery, SqlParameter[] parameters) where T : class
+        {
+            await OpenAsync();
+
+            var results = new List<T>();
+            int totalCount = 0;
+
+            try
+            {
+
+                var combinedQuery = $"{countQuery}; {dataQuery}";
+
+                using (var command = new SqlCommand(combinedQuery, _sqlConnection))
+                {
+                    if (parameters != null && parameters.Any())
+                    {
+                        foreach (var param in parameters)
+                        {
+                            command.Parameters.Add(new SqlParameter(param.ParameterName, param.Value));
+                        }
+                    }
+
+                    if (_dbTransaction is not null)
+                        command.Transaction = _dbTransaction;
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            totalCount = reader.GetInt32(0);
+                        }
+
+                        if (await reader.NextResultAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                var instance = SingleEntityMapper.MapSingleWitoutExecutingReader<T>(reader);
+                                results.Add(instance);
+                            }
+                        }
+                    }
+                }
+                return (results, totalCount);
+            }
+            finally
+            {
+                if (_dbTransaction == null)
+                    await CloseAsync();
+            }
+        }
+
+        public async Task<(IReadOnlyList<T> Items, int TotalCount)> QueryPagedWithReaderAsync<T>(string dataQuery, string countQuery, SqlParameter[] parameters, Func<SqlDataReader, Task<IReadOnlyList<T>>> mapFunc) where T : class
+        {
+            await OpenAsync();
+
+            IReadOnlyList<T> results = new List<T>();
+            int totalCount = 0;
+
+            try
+            {
+                var combinedQuery = $"{countQuery}; {dataQuery}";
+
+                using (var command = new SqlCommand(combinedQuery, _sqlConnection))
+                {
+                    if (parameters != null && parameters.Any())
+                    {
+                        foreach (var param in parameters)
+                        {
+                            command.Parameters.Add(new SqlParameter(param.ParameterName, param.Value));
+                        }
+                    }
+
+                    if (_dbTransaction is not null)
+                        command.Transaction = _dbTransaction;
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.NextResultAsync())
+                        {
+                            results = await mapFunc(reader);
+                        }
+                    }
+                }
+
+                return (results, totalCount);
+            }
+            finally
+            {
+                if (_dbTransaction == null)
+                    await CloseAsync();
+            }
+        }
     }
 }

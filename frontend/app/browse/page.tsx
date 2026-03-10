@@ -298,7 +298,9 @@ export default function BrowsePage() {
       try {
         const interestsData = await browseApi.getInterests()
         if (cancelled) return
-        const interestList = interestsData.map((i) => ({ id: i.id, name: i.name }))
+        const interestList = interestsData
+          .map((i) => ({ id: i.id ?? i.Id ?? "", name: i.name ?? i.Name ?? "" }))
+          .filter((x): x is { id: string; name: string } => Boolean(x.id && x.name))
         setInterests(interestList)
 
         const prefs = await browseApi.getSearchPreferences().catch(() => null)
@@ -315,7 +317,9 @@ export default function BrowsePage() {
         if (!cancelled) {
           const interestsData = await browseApi.getInterests().catch(() => [])
           const interestList = Array.isArray(interestsData)
-            ? interestsData.map((i) => ({ id: i.id, name: i.name }))
+            ? interestsData
+                .map((i) => ({ id: i.id ?? i.Id ?? "", name: i.name ?? i.Name ?? "" }))
+                .filter((x): x is { id: string; name: string } => Boolean(x.id && x.name))
             : []
           if (!cancelled) setInterests(interestList)
           await fetchProfiles(undefined, interestList)

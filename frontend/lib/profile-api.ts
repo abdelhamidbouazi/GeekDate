@@ -56,9 +56,14 @@ export interface AppUser {
   interests?: UserInterest[];
 }
 
+/** Backend UserDto - returned by profile-views, profile-likes */
 export interface UserProfileView {
+  id?: string;
   userName: string;
   pictureUrl: string | null;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
   notificationCount?: number;
   unreadMessagesCount?: number;
 }
@@ -89,4 +94,10 @@ export const profileApi = {
   getProfileViews: () => api.get<UserProfileView[]>("/api/Users/profile-views"),
 
   getProfileLikes: () => api.get<UserProfileView[]>("/api/Users/profile-likes"),
+
+  markProfileViewed: (userId: string) =>
+    api.post<void>(`/api/Users/mark-profile-as-viewed/${userId}`),
+
+  blockProfile: (userId: string) =>
+    api.post<void>(`/api/Users/block-profile/${userId}`),
 };

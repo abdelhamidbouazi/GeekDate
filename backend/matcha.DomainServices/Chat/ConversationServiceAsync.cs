@@ -57,6 +57,7 @@ namespace matcha.DomainServices.Chat
 
             var conversation = new Conversation
             {
+                Id = Guid.NewGuid(),
                 User1Id = authenticatedUser.Id,
                 User2Id = userId,
                 CreatedAt = DateTime.UtcNow
@@ -73,6 +74,13 @@ namespace matcha.DomainServices.Chat
                 throw new ApiException("Conversation not found.");
 
             return await _unitOfWork.GetRepository<IConversationRepositoryAsync>().Delete(conversation) > 0;
+        }
+
+        public Task<IReadOnlyCollection<Conversation>> GetUserConversationsAsync(Guid userId)
+        {
+            var repo = _unitOfWork.GetRepository<IConversationRepositoryAsync>();
+
+            return repo.GetUserConversationsWithUnreadCountAsync(userId);
         }
     }
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useCallback, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -38,71 +39,56 @@ const defaultUser = {
   avatar: "/geeksdatingnobg.png",
 }
 
-const data = {
-  navMain: [
-    {
-      title: "Browse",
-      url: "/browse",
-      icon: Search,
-      badge: null,
-    },
-    {
-      title: "Matches",
-      url: "/matches",
-      icon: Heart,
-      badge: 12,
-    },
-    {
-      title: "Messages",
-      url: "/messages",
-      icon: MessageCircle,
-      badge: 5,
-    },
-    {
-      title: "Profile Views",
-      url: "/profile-views",
-      icon: Eye,
-      badge: 24,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "My Profile",
-      url: "/profile",
-      icon: User,
-      badge: null,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-      badge: null,
-    },
-  ],
-  navComingSoon: [
-    {
-      title: "Shorts",
-      url: "/shorts",
-      icon: Video,
-      badge: null,
-    },
-    {
-      title: "Streaming",
-      url: "/streaming",
-      icon: Radio,
-      badge: null,
-    },
-    {
-      title: "AI Chat",
-      url: "/ai-chat",
-      icon: Sparkles,
-      badge: null,
-    },
-  ],
-}
+const navMainItems = [
+  { title: "Browse", url: "/browse", icon: Search },
+  { title: "Matches", url: "/matches", icon: Heart },
+  { title: "Messages", url: "/messages", icon: MessageCircle },
+  { title: "Profile Views", url: "/profile-views", icon: Eye },
+]
+
+const navSecondary = [
+  { title: "My Profile", url: "/profile", icon: User, badge: null },
+  { title: "Settings", url: "/settings", icon: Settings, badge: null },
+]
+
+const navComingSoon = [
+  { title: "Shorts", url: "/shorts", icon: Video, badge: null },
+  { title: "Streaming", url: "/streaming", icon: Radio, badge: null },
+  { title: "AI Chat", url: "/ai-chat", icon: Sparkles, badge: null },
+]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(defaultUser)
+  const [badges, setBadges] = React.useState<{ matches: number; messages: number; profileViews: number }>({
+    matches: 0,
+    messages: 0,
+    profileViews: 0,
+  })
+  const [notifCount, setNotifCount] = React.useState(0)
+
+  const fetchBadges = useCallback(async () => {
+    try {
+      const [likes, convs, views, notifs] = await Promise.all([
+        import("@/lib/profile-api").then((m) => m.profileApi.getProfileLikes()),
+        import("@/lib/chat-api").then((m) => m.chatApi.getConversations()),
+        import("@/lib/profile-api").then((m) => m.profileApi.getProfileViews()),
+        import("@/lib/notification-api").then((m) => m.notificationApi.getUnread()),
+      ])
+      const likesList = Array.isArray(likes) ? likes : []
+      const convsList = Array.isArray(convs) ? convs : []
+      const viewsList = Array.isArray(views) ? views : []
+      const notifsList = Array.isArray(notifs) ? notifs : []
+      const totalUnread = convsList.reduce((s, c) => s + (c.unreadCount ?? 0), 0)
+      setBadges({
+        matches: likesList.length,
+        messages: totalUnread,
+        profileViews: viewsList.length,
+      })
+      setNotifCount(notifsList.length)
+    } catch {
+      // ignore
+    }
+  }, [])
 
   React.useEffect(() => {
     const userId = getUserIdFromToken()
@@ -120,6 +106,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    const uid = getUserIdFromToken()
+    if (uid) fetchBadges()
+  }, [fetchBadges])
+
+  const data = {
+    navMain: navMainItems.map((item) => ({
+      ...item,
+      badge:
+        item.title === "Matches"
+          ? badges.matches
+          : item.title === "Messages"
+            ? badges.messages
+            : item.title === "Profile Views"
+              ? badges.profileViews
+              : null,
+    })),
+    navSecondary,
+    navComingSoon,
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -149,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         <SidebarSeparator />
-        <SidebarNotificationsTrigger unreadCount={3} />
+        <SidebarNotificationsTrigger unreadCount={notifCount} />
         <SidebarSeparator />
         <NavComingSoon items={data.navComingSoon} />
         <SidebarSeparator />

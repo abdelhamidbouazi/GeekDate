@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -7,51 +8,70 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { UserCard } from "@/components/user-card"
-import { Heart } from "lucide-react"
+import { Heart, Loader2 } from "lucide-react"
+import { profileApi } from "@/lib/profile-api"
 
-const matchedProfiles = [
-  {
-    id: 1,
-    name: "Alex",
-    age: 28,
-    role: "Full‑stack Developer",
-    location: "Remote • EU",
-    image: "/image3.webp",
-    tags: ["TypeScript", "React", "Next.js"],
-    bio: "Open‑source contributor, coffee enthusiast, late‑night deploys. Building the future, one commit at a time.",
-    match: 95,
-    online: true,
-    fameRating: 87,
-  },
-  {
-    id: 2,
-    name: "Sam",
-    age: 25,
-    role: "Game Developer",
-    location: "Berlin",
-    image: "/image2.jpeg",
-    tags: ["Unity", "C#", "RPGs"],
-    bio: "Boss fights, pixel art, and co‑op sessions. Creating worlds where code meets creativity.",
-    match: 92,
-    online: true,
-    fameRating: 72,
-  },
-  {
-    id: 3,
-    name: "Taylor",
-    age: 27,
-    role: "Frontend Engineer",
-    location: "London",
-    image: "/image4.jpg",
-    tags: ["Design Systems", "Tailwind", "UX"],
-    bio: "Dark mode, clean UI, messy git branches. Crafting interfaces that feel like home.",
-    match: 90,
-    online: true,
-    fameRating: 68,
-  },
-]
+const PLACEHOLDER_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Crect fill='%23999' width='400' height='600'/%3E%3Ctext fill='%23fff' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24'%3ENo photo%3C/text%3E%3C/svg%3E"
+
+function mapProfileLikeToCard(p: {
+  userName: string;
+  pictureUrl: string | null;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
+}) {
+  const name =
+    [p.firstName, p.lastName].filter(Boolean).join(" ") || p.userName || "User"
+  return {
+    id: p.userName,
+    name,
+    age: p.age ?? 0,
+    role: "Member",
+    location: "Match",
+    image: p.pictureUrl ?? PLACEHOLDER_IMAGE,
+    tags: [],
+    bio: "",
+    match: 100,
+    online: false,
+    fameRating: 0,
+  }
+}
 
 export default function MatchesPage() {
+  const [profiles, setProfiles] = useState<
+    ReturnType<typeof mapProfileLikeToCard>[]
+  >([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchMatches = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await profileApi.getProfileLikes()
+      const list = Array.isArray(data) ? data : []
+      setProfiles(list.map(mapProfileLikeToCard))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load matches")
+      setProfiles([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchMatches()
+  }, [fetchMatches])
+
+  if (loading && profiles.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider
       style={
@@ -73,15 +93,21 @@ export default function MatchesPage() {
                     <Heart className="size-6 text-pink-500 fill-pink-500" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Your Matches</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                      Your Matches
+                    </h1>
                     <p className="text-muted-foreground">
-                      People who liked you back. Start a conversation!
+                      People who liked you. Start a conversation!
                     </p>
                   </div>
                 </div>
 
+                {error && (
+                  <p className="text-destructive mb-4">{error}</p>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {matchedProfiles.map((profile, index) => (
+                  {profiles.map((profile, index) => (
                     <div
                       key={profile.id}
                       className="opacity-0 animate-fade-in"
@@ -102,10 +128,19 @@ export default function MatchesPage() {
                         match={profile.match}
                         online={profile.online}
                         fameRating={profile.fameRating}
+                        onLike={() => {}}
+                        onDislike={() => {}}
+                        profileLink={false}
                       />
                     </div>
                   ))}
                 </div>
+
+                {profiles.length === 0 && !loading && (
+                  <p className="text-muted-foreground py-12 text-center">
+                    No matches yet. Like profiles to get matches!
+                  </p>
+                )}
               </div>
             </div>
           </div>

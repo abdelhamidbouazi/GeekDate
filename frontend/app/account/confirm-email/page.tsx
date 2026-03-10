@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { authApi } from "@/lib/auth"
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
@@ -20,9 +20,11 @@ export default function ConfirmEmailPage() {
       try {
         await authApi.confirmEmail(userId, code)
         setStatus("success")
+        sessionStorage.setItem("emailJustVerified", "1")
         try {
           const res = await authApi.validateToken() as { emailVerified?: boolean; profileCompleted?: boolean }
           if (res?.emailVerified && res?.profileCompleted) {
+            sessionStorage.removeItem("emailJustVerified")
             router.replace("/browse")
             return
           }
@@ -49,5 +51,13 @@ export default function ConfirmEmailPage() {
         <p className="text-destructive">Verification failed. The link may have expired.</p>
       )}
     </div>
+  )
+}
+
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={<div className="bg-muted flex min-h-svh items-center justify-center p-6"><p className="text-muted-foreground">Loading...</p></div>}>
+      <ConfirmEmailContent />
+    </Suspense>
   )
 }
