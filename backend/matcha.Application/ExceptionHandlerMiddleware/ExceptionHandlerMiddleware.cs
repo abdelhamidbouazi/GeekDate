@@ -1,4 +1,4 @@
-﻿using matcha.Application.Exceptions;
+using matcha.Application.Exceptions;
 using matcha.Application.ResponseWrappers;
 using Microsoft.AspNetCore.Http;
 using System.Net;
@@ -56,8 +56,11 @@ namespace matcha.Application.ExceptionHandlerMiddleware
 
                     default:
                         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                         response.Message = "Internal server error";
+                        response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        Console.WriteLine($"[500] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                        if (ex.InnerException != null)
+                            Console.WriteLine($"Inner: {ex.InnerException.Message}");
                         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
                         break;
                 }

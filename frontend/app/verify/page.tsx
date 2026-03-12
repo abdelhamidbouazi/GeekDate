@@ -2,10 +2,11 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, Upload } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Upload } from "lucide-react"
 import { authApi } from "@/lib/auth"
 import { api } from "@/lib/api"
 import { browseApi } from "@/lib/browse-api"
+import { profileApi } from "@/lib/profile-api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,7 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 
-type Step = "loading" | "verify-email" | "basic-profile" | "preferences"
+type Step = "loading" | "verify-email" | "basic-profile" | "preferences" | "location"
 
 const GENDER_OPTIONS = [
   { value: "1", label: "Male" },
@@ -74,6 +75,10 @@ function VerifyContent() {
 
   const [profileLoading, setProfileLoading] = useState(false)
   const [verifyLoading, setVerifyLoading] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationMode, setLocationMode] = useState<"choose" | "browser" | "manual">("choose")
+  const [manualCity, setManualCity] = useState("")
+  const [manualCountry, setManualCountry] = useState("")
 
   const fetchInterests = useCallback(async () => {
     setInterestsLoading(true)
@@ -134,7 +139,18 @@ function VerifyContent() {
         const profileCompleted = res?.profileCompleted ?? false
 
         if (emailVerified && profileCompleted) {
-          router.replace("/browse")
+          try {
+            const profile = await profileApi.getConnectedProfile()
+            const lat = profile?.latitude ?? (profile as { Latitude?: number })?.Latitude ?? 0
+            const lng = profile?.longitude ?? (profile as { Longitude?: number })?.Longitude ?? 0
+            if (lat !== 0 || lng !== 0) {
+              router.replace("/browse")
+              return
+            }
+            setStep("location")
+          } catch {
+            setStep("location")
+          }
           return
         }
         if (!emailVerified) {
@@ -234,7 +250,7 @@ function VerifyContent() {
       validIds.forEach((id) => form.append("UserInterestIds", id))
       allPictures.forEach((file) => form.append("Pictures", file))
       await api.putFormData<unknown>("/api/UserProfile/complete-preferences", form)
-      router.replace("/browse")
+      setStep("location")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to complete profile")
     } finally {
@@ -246,6 +262,68 @@ function VerifyContent() {
     setSelectedInterestIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
+  }
+
+  async function geocodeCityCountry(city: string, country: string): Promise<{ lat: number; lon: number }> {
+    const query = encodeURIComponent(`${city.trim()}, ${country.trim()}`)
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
+      { headers: { "Accept-Language": "en", "User-Agent": "Matcha/1.0" } }
+    )
+    if (!res.ok) throw new Error("Geocoding failed")
+    const data = (await res.json()) as { lat: string; lon: string }[]
+    if (!data?.[0]) throw new Error("Location not found. Try a different city or country.")
+    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
+  }
+
+  async function handleLocationAllow() {
+    setLocationLoading(true)
+    setError("")
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        })
+      })
+      await profileApi.setLocation(pos.coords.latitude, pos.coords.longitude)
+      router.replace("/browse")
+    } catch (err: unknown) {
+      const pe = err as { code?: number }
+      if (typeof pe?.code === "number" && pe.code === 1) {
+        setError("Location access denied.")
+        setLocationMode("manual")
+      } else {
+        setError("Could not get your location.")
+        setLocationMode("manual")
+      }
+    } finally {
+      setLocationLoading(false)
+    }
+  }
+
+  async function handleManualLocationSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    if (!manualCity.trim() || !manualCountry.trim()) {
+      setError("Please enter both city and country")
+      return
+    }
+    setLocationLoading(true)
+    try {
+      const { lat, lon } = await geocodeCityCountry(manualCity, manualCountry)
+      await profileApi.setLocation(lat, lon)
+      router.replace("/browse")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to find location")
+    } finally {
+      setLocationLoading(false)
+    }
+  }
+
+  function handleLocationSkip() {
+    router.replace("/browse")
   }
 
   if (step === "loading") {
@@ -289,7 +367,7 @@ function VerifyContent() {
         <div className="w-full max-w-md">
           <Card>
             <CardHeader className="text-center">
-              <div className="text-muted-foreground mb-1 text-sm font-medium">Step 1 of 2</div>
+              <div className="text-muted-foreground mb-1 text-sm font-medium">Step 1 of 3</div>
               <CardTitle className="text-xl">Basic profile</CardTitle>
               <CardDescription>
                 Add your photo and basic info
@@ -367,12 +445,99 @@ function VerifyContent() {
     )
   }
 
+  if (step === "location") {
+    return (
+      <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+        <div className="w-full max-w-sm">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="text-muted-foreground mb-1 text-sm font-medium">Step 3 of 3</div>
+              <CardTitle className="text-xl">Share your location</CardTitle>
+              <CardDescription>
+                Share your location for better matches nearby
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {locationMode === "manual" ? (
+                <form onSubmit={handleManualLocationSubmit} className="flex flex-col gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="manualCity">City</FieldLabel>
+                    <Input
+                      id="manualCity"
+                      type="text"
+                      placeholder="e.g. Paris"
+                      value={manualCity}
+                      onChange={(e) => setManualCity(e.target.value)}
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="manualCountry">Country</FieldLabel>
+                    <Input
+                      id="manualCountry"
+                      type="text"
+                      placeholder="e.g. France"
+                      value={manualCountry}
+                      onChange={(e) => setManualCountry(e.target.value)}
+                      required
+                    />
+                  </Field>
+                  <div className="flex flex-col gap-2">
+                    <Button type="submit" disabled={locationLoading} className="w-full">
+                      <MapPin className="mr-2 size-4" />
+                      {locationLoading ? "Finding location..." : "Use this location"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => { setLocationMode("choose"); setError("") }}
+                      disabled={locationLoading}
+                      className="w-full"
+                    >
+                      Try browser location again
+                    </Button>
+                    <Button variant="ghost" onClick={handleLocationSkip} disabled={locationLoading} className="w-full">
+                      Skip for now
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <Button onClick={handleLocationAllow} disabled={locationLoading} className="w-full">
+                    <MapPin className="mr-2 size-4" />
+                    {locationLoading ? "Getting location..." : "Allow location access"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocationMode("manual")}
+                    disabled={locationLoading}
+                    className="w-full"
+                  >
+                    Enter city and country instead
+                  </Button>
+                  <Button variant="ghost" onClick={handleLocationSkip} disabled={locationLoading} className="w-full">
+                    Skip for now
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <div className="text-muted-foreground mb-1 text-sm font-medium">Step 2 of 2</div>
+            <div className="text-muted-foreground mb-1 text-sm font-medium">Step 2 of 3</div>
             <CardTitle className="text-xl">Preferences</CardTitle>
             <CardDescription>
               Tell us about yourself and your interests

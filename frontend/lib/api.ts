@@ -5,7 +5,18 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 function parseErrorMessage(text: string, status: number): string {
   if (!text?.trim()) return status === 500 ? "Server error. Please try again." : "Something went wrong.";
   try {
-    const json = JSON.parse(text) as { Message?: string; message?: string };
+    const json = JSON.parse(text) as {
+      Message?: string;
+      message?: string;
+      errors?: Record<string, string | string[]>;
+    };
+    const errors = json.errors;
+    if (errors && typeof errors === "object") {
+      const messages = Object.values(errors).flatMap((v) =>
+        Array.isArray(v) ? v : [v]
+      ).filter((s): s is string => typeof s === "string");
+      if (messages.length > 0) return messages.join(". ");
+    }
     const msg = json.Message ?? json.message;
     if (typeof msg === "string" && msg.trim()) return msg;
   } catch {

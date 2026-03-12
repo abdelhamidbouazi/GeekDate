@@ -38,13 +38,19 @@ shell-frontend:
 shell-db:
 	$(COMPOSE) exec sqlserver /bin/bash
 
-seed:
-	$(COMPOSE) run --rm -e ASPNETCORE_SEED_ONLY=true backend
+seed: up
+	@echo "Waiting for sqlserver to be healthy..."
+	@sleep 40
+	@bash -c 'set -a; [ -f .env ] && . ./.env; set +a; ./backend/scripts/restore-from-backup.sh'
 
 migrate: seed
 
 reset-db: down
 	$(COMPOSE) down -v
+	$(COMPOSE) up -d sqlserver
+	@echo "Waiting for sqlserver to be healthy..."
+	@sleep 40
+	@bash -c 'set -a; [ -f .env ] && . ./.env; set +a; ./backend/scripts/restore-from-backup.sh'
 	$(COMPOSE) up -d --build
 
 clean: down

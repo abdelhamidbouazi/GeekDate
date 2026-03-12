@@ -85,8 +85,10 @@ app.UseCors(builder => builder.AllowAnyHeader()
      .AllowCredentials()
      .WithOrigins("http://localhost:3000", "https://matcha-dating.vercel.app"));
 
-
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 

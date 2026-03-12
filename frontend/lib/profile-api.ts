@@ -100,4 +100,19 @@ export const profileApi = {
 
   blockProfile: (userId: string) =>
     api.post<void>(`/api/Users/block-profile/${userId}`),
+
+  getConnectedProfile: () =>
+    api.get<{
+      latitude?: number;
+      longitude?: number;
+      Latitude?: number;
+      Longitude?: number;
+      [key: string]: unknown;
+    }>("/api/UserProfile/me"),
+
+  setLocation: (lat: number, lng: number) =>
+    api.post<void>("/api/UserProfile/set-location", {
+      Latitude: lat,
+      Longitude: lng,
+    }),
 };

@@ -37,18 +37,35 @@ export function SignupForm({
       setError("Passwords do not match")
       return
     }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
+    if (!passwordRegex.test(password)) {
+      setError("Password must contain uppercase, lowercase, digit and special character")
+      return
+    }
     setLoading(true)
     try {
-      const res = await authApi.register({ firstName, lastName, userName, email, password })
-      if (res.isSucceeded) {
-        const data = res.data as { token?: string } | undefined
-        if (data?.token) {
-          localStorage.setItem("accessToken", data.token)
+      const res = await authApi.register({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        userName: userName.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      })
+      const ok = res?.isSucceeded ?? (res as { IsSucceeded?: boolean })?.IsSucceeded ?? true
+      if (ok) {
+        const data = res.data as { token?: string; Token?: string } | undefined
+        const token = data?.token ?? data?.Token
+        if (token) {
+          localStorage.setItem("accessToken", token)
           setAuthCookie()
         }
         router.push("/verify")
       } else {
-        setError(res.message || "Registration failed")
+        setError((res as { message?: string })?.message || "Registration failed")
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed")
@@ -127,7 +144,7 @@ export function SignupForm({
             onChange={(e) => setPassword(e.target.value)}
           />
           <FieldDescription>
-            Must be at least 8 characters long.
+            At least 8 characters, with uppercase, lowercase, digit and special character.
           </FieldDescription>
         </Field>
         <Field>

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using matcha.Application.Dtos.Users;
 using matcha.Application.Interfaces.Repositories;
 using matcha.Application.Interfaces.Services;
@@ -39,6 +39,9 @@ namespace matcha.DomainServices.Services.UserService
         {
             var userAge = CalculateUserAge(currentUser);
 
+            // When user has no location, SQL uses 999999999 for distance; we must allow it to pass
+            var hasLocation = (currentUser.Latitude != 0 || currentUser.Longitude != 0);
+
             // Search levels with increasing distance
             var searchLevels = new[]
             {
@@ -54,13 +57,14 @@ namespace matcha.DomainServices.Services.UserService
 
             foreach (var level in searchLevels)
             {
+                var maxDist = hasLocation ? level.Distance : 999_999_999.0; // bypass distance filter when no location
                 var spec = new BrowseUsersSpecification
                 {
                     ExcludeUserId = currentUser.Id,
                     PreferredGenders = DeterminePreferredGenders(currentUser),
                     UserLatitude = currentUser.Latitude,
                     UserLongitude = currentUser.Longitude,
-                    MaxDistanceMeters = level.Distance,
+                    MaxDistanceMeters = maxDist,
 
                     UserInterestIds = level.UseInterests
                         ? currentUser.Interests?.Select(i => i.InterestId).ToList() ?? new List<Guid>()
