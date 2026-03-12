@@ -32,6 +32,11 @@ namespace matcha.Infrastructure.Repositories
 
         public async Task CreateDefaultUserPreferencesAsync(Guid userId)
         {
+            // Skip if preferences already exist for this user
+            var existing = await GetByUserIdAsync(userId);
+            if (existing != null)
+                return;
+
             var user = await _unitOfWork.GetRepository<IUserRepositoryAsync>().FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
                 throw new ArgumentException("User not found");

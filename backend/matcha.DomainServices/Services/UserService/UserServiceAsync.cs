@@ -141,21 +141,31 @@ namespace matcha.DomainServices.Services.UserService
             if (user is null)
                 throw new NotFoundException($"User with ID {userId} not found.");
 
-            var photo = await _unitOfWork.GetRepository<IPhotoRepositoryAsync>().FindAsync(photoId);
+            var photoRepo = _unitOfWork.GetRepository<IPhotoRepositoryAsync>();
+            var photo = await photoRepo.FindAsync(photoId);
 
             if (photo is null)
                 throw new NotFoundException("Photo not found. Please choose a valid photo.");
 
             if (photo.IsMain)
-                throw new ApiException("This photo is already set as the main photo. Please select a different photo.");
+                return true;
 
+            // Unset current main photo
             var currentMainPhoto = user.Photos.FirstOrDefault(p => p.IsMain);
+            if (currentMainPhoto != null)
+            {
+                currentMainPhoto.IsMain = false;
+                await photoRepo.Update(currentMainPhoto);
+            }
 
-            if (currentMainPhoto != null) currentMainPhoto.IsMain = false;
-
+            // Set new main photo
             photo.IsMain = true;
+            await photoRepo.Update(photo);
 
-            //return await _unitOfWork.GetRepository<IUserRepositoryAsync>().SaveChangesAsync();
+            // Update the denormalized PhotoProfileUrl on AppUser
+            user.PhotoProfileUrl = photo.Url;
+            await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
+
             return true;
         }
 
@@ -182,11 +192,7 @@ namespace matcha.DomainServices.Services.UserService
                 //}
             }
 
-            user.Photos.Remove(photo);
-
-
-            //if (!await _unitOfWork.GetRepository<IUserRepositoryAsync>().SaveChangesAsync())
-            //    throw new ApiException("Failed to delete the photo from the database.");
+            await _unitOfWork.GetRepository<IPhotoRepositoryAsync>().Delete(photo);
 
             return true;
         }
@@ -372,59 +378,44 @@ namespace matcha.DomainServices.Services.UserService
             // Notify both users of the match
             await _notificationService.SendNotificationAsync(targetUserId, currentUserId, NotificationType.Match);
             await _notificationService.SendNotificationAsync(currentUserId, targetUserId, NotificationType.Match);
-            //if ((like.LikerUserId == targetUserId && like.LikedUserId == currentUserId)
-            //   || (like.LikerUserId == currentUserId && like.LikedUserId == targetUserId))
-            //{
-            //    if (!like.IsMatched)
-            //    {
-            //        like.IsMatched = true;
-            //        like.MatchedAt = DateTime.UtcNow;
-
-            //        var user = await GetUserByIdAsync(targetUserId);
-            //        user.FameRating += FameRatingConstants.MatchRating;
-            //        await repo.Update(like);
-            //        await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
-
-            //        // Create Match entity
-            //        var matchRepo = _unitOfWork.GetRepository<IMatchRepositoryAsync>();
-            //        await matchRepo.AddAsync(new Match
-            //        {
-            //            User1Id = currentUserId,
-            //            User2Id = targetUserId,
-            //            MatchedAt = DateTime.UtcNow
-            //        });
-
-            //        // Notifications / conversation / SignalR here
-            //    }
-            //}
         }
 
 
-        public async Task<bool> BlockUserAsync(Guid userIdToLike)
+        public async Task<bool> BlockUserAsync(Guid userToBlock)
         {
             try
             {
                 await _unitOfWork.CreateTransaction();
 
                 var userLike = await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>()
-                    .FirstOrDefaultAsync(x => (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userIdToLike) || (x.LikerUserId == userIdToLike && x.LikedUserId == _authenticatedUser.UserId));
+                    .FirstOrDefaultAsync(x => (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userToBlock) || (x.LikerUserId == userToBlock && x.LikedUserId == _authenticatedUser.UserId));
                 if (userLike is not null)
                     await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>().Delete(userLike);
 
                 var profileViews = await _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>()
-                    .GetAllAsync(x => (x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == userIdToLike) || (x.TargetUserId == _authenticatedUser.UserId && x.FromUserId == userIdToLike));
+                    .GetAllAsync(x => (x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == userToBlock) || (x.TargetUserId == _authenticatedUser.UserId && x.FromUserId == userToBlock));
                 if (profileViews.Any())
                     await _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>().DeleteRange(profileViews);
+
+                await RemoveMatchAsync(_authenticatedUser.UserId, userToBlock);
 
                 var block = new UserBlock
                 {
                     Id = Guid.NewGuid(),
                     BlockingUserId = _authenticatedUser.UserId,
-                    BlockedUserId = userIdToLike,
+                    BlockedUserId = userToBlock,
                 };
 
                 await _unitOfWork.GetRepository<IGenericRepoAsync<UserBlock>>().AddAsync(block);
+
                 await _unitOfWork.CommitTransaction();
+
+                var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>()
+                                .FirstOrDefaultAsync(x => (x.User1Id == _authenticatedUser.UserId && x.User2Id == userToBlock)
+                                   || (x.User2Id == _authenticatedUser.UserId && x.User1Id == userToBlock));
+
+                await _notificationService.SendUserBlockedToConversationAsync(conversation.Id);
+
                 return true;
             }
             catch (Exception ex)
@@ -519,6 +510,22 @@ namespace matcha.DomainServices.Services.UserService
 
             }
             return result;
+        }
+
+        public async Task<(bool IsLikedByMe, bool IsLikedByThem, bool IsMatched)> GetLikeStatusAsync(Guid targetUserId)
+        {
+            var currentUserId = _authenticatedUser.UserId;
+            var repo = _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>();
+            var like = await repo.FirstOrDefaultAsync(l =>
+                (l.LikerUserId == currentUserId && l.LikedUserId == targetUserId) ||
+                (l.LikerUserId == targetUserId && l.LikedUserId == currentUserId));
+
+            if (like == null)
+                return (false, false, false);
+
+            var isLikedByMe = like.LikerUserId == currentUserId || like.IsMatched;
+            var isLikedByThem = like.LikerUserId == targetUserId || like.IsMatched;
+            return (isLikedByMe, isLikedByThem, like.IsMatched);
         }
 
         public async Task<IEnumerable<UserDto>> GetWhoLikedMeAsync(Guid UserId)

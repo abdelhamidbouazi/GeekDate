@@ -20,9 +20,10 @@ namespace matcha.Application.Features.Profile.Commands.UpdateUserProfile
 
         public async Task<Response<UserProfileDto>> Handle(UpdateUserProfileCommand request, CancellationToken cancellationToken)
         {
+            request.UserId = _authenticatedUser.UserId;
             var result = await _userProfileService.UpdateUserProfileAsync(request, _authenticatedUser.UserId);
 
-            return new Response<UserProfileDto>(await _userProfileService.GetUserProfile(request.UserId));
+            return new Response<UserProfileDto>(await _userProfileService.GetUserProfile(_authenticatedUser.UserId));
         }
 
         private void ValidateRequest(UpdateUserProfileCommand request)

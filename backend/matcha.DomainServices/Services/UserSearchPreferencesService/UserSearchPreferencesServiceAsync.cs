@@ -26,7 +26,11 @@ namespace matcha.DomainServices.Services.UserSearchPreferencesService
             var existingPreference = await _userSearchPreferencesRepositoryAsync.GetByUserIdAsync(userId);
             if (existingPreference == null)
             {
-                throw new ArgumentException("User not found", nameof(userId));
+                // Create default preferences if none exist
+                await _userSearchPreferencesRepositoryAsync.CreateDefaultUserPreferencesAsync(userId);
+                existingPreference = await _userSearchPreferencesRepositoryAsync.GetByUserIdAsync(userId);
+                if (existingPreference == null)
+                    throw new ArgumentException("Failed to create default preferences", nameof(userId));
             }
 
             return _mapper.Map<SearchPreferencesDto>(existingPreference);

@@ -40,21 +40,23 @@ namespace matcha.Infrastructure.Repositories
         public async Task<IReadOnlyCollection<Conversation>> GetUserConversationsWithUnreadCountAsync(Guid userId)
         {
             var query = @"
-            SELECT 
-                c.Id,
-                c.User1Id,
-                c.User2Id,
-                c.CreatedAt,
-                ISNULL((
-                SELECT COUNT(*) 
-                FROM Messages m 
-                WHERE m.ConversationId = c.Id 
-                  AND m.ReceiverId = @userId 
-                  AND m.IsRead = 0
-                    ), 0) AS UnreadCount
+                SELECT
+                    c.Id,
+                    c.User1Id,
+                    c.User2Id,
+                    c.CreatedAt,
+                    ISNULL((
+                        SELECT COUNT(*)
+                        FROM Messages m
+                        WHERE m.ConversationId = c.Id
+                          AND m.ReceiverId = @userId
+                          AND m.IsRead = 0
+                    ), 0) AS UnreadCount,
+                    (SELECT TOP 1 m3.MessageText FROM Messages m3 WHERE m3.ConversationId = c.Id ORDER BY m3.SentAt DESC) AS LastMessageText,
+                    (SELECT MAX(m2.SentAt) FROM Messages m2 WHERE m2.ConversationId = c.Id) AS LastMessageAt
                 FROM Conversations c
                 WHERE c.User1Id = @userId OR c.User2Id = @userId
-                ORDER BY c.CreatedAt DESC
+                ORDER BY ISNULL((SELECT MAX(m4.SentAt) FROM Messages m4 WHERE m4.ConversationId = c.Id), c.CreatedAt) DESC
                 ";
 
             var parameters = new[] { new SqlParameter("@userId", userId) };

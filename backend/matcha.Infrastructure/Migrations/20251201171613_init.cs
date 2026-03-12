@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -330,6 +330,94 @@ namespace matcha.Infrastructure.Migrations
                 name: "IX_UserTag_UserId",
                 table: "UserTag",
                 column: "UserId");
+
+            migrationBuilder.CreateTable(
+                name: "UserSearchPreferences",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MinAge = table.Column<int>(type: "int", nullable: false),
+                    MaxAge = table.Column<int>(type: "int", nullable: false),
+                    MinFameRating = table.Column<int>(type: "int", nullable: false),
+                    MaxFameRating = table.Column<int>(type: "int", nullable: false),
+                    MaxDistanceKm = table.Column<double>(type: "float", nullable: true),
+                    InterestIds = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserSearchPreferences", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserSearchPreferences_AppUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AppUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Matches",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    User1Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    User2Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MatchedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Matches", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Conversations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    User1Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    User2Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Conversations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Messages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ReceiverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MessageText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false),
+                    ConversationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Messages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Messages_Conversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "Conversations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSearchPreferences_UserId",
+                table: "UserSearchPreferences",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Messages_ConversationId",
+                table: "Messages",
+                column: "ConversationId");
         }
 
         /// <inheritdoc />
@@ -358,6 +446,18 @@ namespace matcha.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserLikes");
+
+            migrationBuilder.DropTable(
+                name: "Messages");
+
+            migrationBuilder.DropTable(
+                name: "UserSearchPreferences");
+
+            migrationBuilder.DropTable(
+                name: "Matches");
+
+            migrationBuilder.DropTable(
+                name: "Conversations");
 
             migrationBuilder.DropTable(
                 name: "UserTag");

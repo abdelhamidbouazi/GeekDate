@@ -53,7 +53,7 @@ namespace matcha.Infrastructure.Helpers
                     MapChildToParent(parent, child);
                 }
             }
-            return dict.Values.First();
+            return dict.Values.FirstOrDefault();
         }
 
     }

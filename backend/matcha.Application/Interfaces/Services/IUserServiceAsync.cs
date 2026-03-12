@@ -20,5 +20,6 @@ namespace matcha.Application.Interfaces.Services
         Task<bool> BlockUserAsync(Guid userIdToLike);
         Task<IEnumerable<UserDto>> GetWhoLikedMeAsync(Guid UserId);
         Task<IEnumerable<UserDto>> GetWhoViewedMeAsync(Guid userId);
+        Task<(bool IsLikedByMe, bool IsLikedByThem, bool IsMatched)> GetLikeStatusAsync(Guid targetUserId);
     }
 }

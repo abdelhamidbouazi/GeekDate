@@ -15,8 +15,9 @@ namespace matcha.Infrastructure.Services.Notification
         public async Task<IReadOnlyCollection<Domain.Entities.Notification>> GetUnreadNotifications(Guid userId)
         {
             var repo = _unitOfWork.GetRepository<INotificationRepositoryAsync>();
+            var notifications = await repo.GetAllAsync(n => n.UserId == userId && n.IsRead == false);
 
-            return await repo.GetAllAsync(n => n.UserId == userId && n.IsRead == false);
+            return notifications.OrderByDescending(n => n.CreatedAt).ToList();
         }
 
         public async Task MarkAllAsReadAsync(Guid userId)

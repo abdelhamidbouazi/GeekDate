@@ -65,6 +65,18 @@ namespace matcha.API.Controllers
             return Ok(new Response<string>("password updated"));
         }
 
+        [Authorize]
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerificationEmail()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return Unauthorized();
+
+            await _accountService.SendConfirmationEmail(Guid.Parse(userId));
+            return Ok(new Response<string>("Verification email sent"));
+        }
+
+        [Authorize]
         [HttpGet("validate-token")]
         public async Task<IActionResult> ValidateToken()
         {
@@ -72,18 +84,18 @@ namespace matcha.API.Controllers
 
             if (!result.IsValid)
             {
-                return Unauthorized(new { message = result.Message });
+                return Unauthorized(new { isValid = false, message = result.Message });
             }
 
             return Ok(new
             {
+                isValid = true,
                 message = result.Message,
                 emailVerified = result.EmailVerified,
                 profileCompleted = result.ProfileCompleted
             });
         }
 
-        [Authorize]
         [HttpPost("refresh-token")]
         public async Task<IActionResult> GenerateAccessToken([FromBody] string refreshToken)
         {

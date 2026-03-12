@@ -1,8 +1,9 @@
-﻿using Bogus;
+using Bogus;
 using matcha.Domain.Common.Enums;
 using matcha.Domain.Entities;
 using matcha.Infrastructure.ApplicationDbContext;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Text;
 
 namespace matcha.Infrastructure.Seeding
@@ -10,6 +11,7 @@ namespace matcha.Infrastructure.Seeding
     public class Seed
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
         private readonly Random _rand = new Random();
 
         // Zones géographiques (Casablanca, Mohammedia, Rabat)
@@ -20,9 +22,10 @@ namespace matcha.Infrastructure.Seeding
 
         private readonly HashSet<string> _usedLocations = new();
 
-        public Seed(AppDbContext context)
+        public Seed(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         public async Task SeedAsync()
@@ -44,10 +47,13 @@ namespace matcha.Infrastructure.Seeding
             // Seed Users	
             using var hmac = new System.Security.Cryptography.HMACSHA512();
 
+            var seedCount = _configuration.GetValue<int>("SEED_USER_COUNT", 500);
+            if (seedCount < 1) seedCount = 500;
+
             var faker = new Faker("fr");
             var users = new List<AppUser>();
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < seedCount; i++)
             {
                 var gender = i % 2 == 0 ? Gender.Male : Gender.Female;
 

@@ -1,5 +1,7 @@
 ﻿using matcha.Application.Dtos.Users;
 using matcha.Application.Features.Profile.Commands.CompleteUserPreferences;
+using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
+using matcha.Application.Features.Profile.Queries.GetConnectedProfile;
 using matcha.Application.Features.Users.Commands.CompleteUserProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +19,13 @@ namespace matcha.API.Controllers
         }
 
         [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult> GetMyProfile()
+        {
+            return Ok(await _mediator.Send(new GetConnectedProfileQuery()));
+        }
+
+        [Authorize]
         [HttpPut("complete-basic-profile")]
         public async Task<ActionResult> Create([FromForm] BasicUserProfileDto basicUserProfileDto)
         {
@@ -30,10 +39,11 @@ namespace matcha.API.Controllers
             return Ok(await _mediator.Send(request));
         }
 
-        //[HttpPut("{userId}/update-profile")]
-        //public async Task<ActionResult> Update(Guid userId, UpdateUserProfileDto updateUserProfileDto)
-        //{
-        //    return Ok(await _mediator.Send(new UpdateUserProfileCommand { UserId = userId, UpdateUserProfileDto = updateUserProfileDto }));
-        //}
+        [Authorize]
+        [HttpPut("update-profile")]
+        public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserProfileCommand command)
+        {
+            return Ok(await _mediator.Send(command));
+        }
     }
 }

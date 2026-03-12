@@ -15,7 +15,8 @@ namespace matcha.Infrastructure.Repositories
         public async Task<IEnumerable<InterestDto>> GetInterestsWithNamesByUserIdAsync(Guid userId)
         {
             var condition = new Condition($"{nameof(UserInterest)}s.{nameof(UserInterest.UserId)}=@userId", new SqlParameter("@userId", userId));
-            var query = _builder.InnerJoin<Interest, UserInterest>(nameof(Interest.Id), nameof(UserInterest.InterestId), false)
+            var query = _builder.Select($"{nameof(Interest)}s.{nameof(Interest.Id)}", $"{nameof(Interest)}s.{nameof(Interest.Name)}")
+                .InnerJoin<Interest, UserInterest>(nameof(Interest.Id), nameof(UserInterest.InterestId), false)
                 .Where(condition)
                 .Build();
 

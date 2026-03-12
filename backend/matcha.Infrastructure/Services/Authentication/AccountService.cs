@@ -211,19 +211,23 @@ namespace matcha.Infrastructure.Services.Authentication
             if (user is null)
                 throw new NotFoundException($"User with the given id {userId} was not found.");
 
+            // Already verified — idempotent, no error
+            if (user.EmailConfirmed)
+                return;
+
             var confirmEmailToken = await _unitOfWork.GetRepository<IConfirmEmailTokenRepositoryAsync>()
                     .GetConfirmEmailTokenByUserId(userId);
 
             if (confirmEmailToken is null)
                 throw new NotFoundException("The user does not have any current valid token.");
 
-            if (confirmEmailToken.Token.Equals(DecodeToken(token), StringComparison.OrdinalIgnoreCase))
-            {
-                user.EmailConfirmed = true;
-                await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
-                await _unitOfWork.GetRepository<IConfirmEmailTokenRepositoryAsync>()
-                        .UpdateAllTokensByUserId(userId);
-            }
+            if (!confirmEmailToken.Token.Equals(DecodeToken(token), StringComparison.OrdinalIgnoreCase))
+                throw new ValidationException("Invalid or expired verification token.");
+
+            user.EmailConfirmed = true;
+            await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
+            await _unitOfWork.GetRepository<IConfirmEmailTokenRepositoryAsync>()
+                    .UpdateAllTokensByUserId(userId);
         }
 
         public async Task SendConfirmationEmail(Guid userId)
@@ -393,8 +397,8 @@ namespace matcha.Infrastructure.Services.Authentication
             return new TokenValidationResult
             {
                 IsValid = true,
-                EmailVerified = claims.EmailVerified,
-                ProfileCompleted = claims.ProfileCompleted,
+                EmailVerified = userEntity.EmailConfirmed,
+                ProfileCompleted = userEntity.IsProfileCompleted,
                 Message = "Token is valid and user meets the required conditions."
             };
         }
@@ -459,9 +463,9 @@ namespace matcha.Infrastructure.Services.Authentication
         {
             var code = EncodeToken(token);
 
-            var _endpointUri = new Uri(new Uri(origin.TrimEnd('/')), endPoint.TrimStart('/'));
-
-            var verificationUri = QueryHelpers.AddQueryString(_endpointUri.ToString(), "userId", userId.ToString());
+            // origin already contains the full URL (e.g. http://localhost:3000/account/confirm-email)
+            // so just add query params directly — no need to append endPoint again
+            var verificationUri = QueryHelpers.AddQueryString(origin, "userId", userId.ToString());
             verificationUri = QueryHelpers.AddQueryString(verificationUri, "code", code);
 
             return verificationUri;

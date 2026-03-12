@@ -10,7 +10,7 @@ namespace matcha.API.Controllers
 
 
     [Authorize]
-    public class UsersController(IUserServiceAsync userServiceAsync, IAuthenticatedUser authenticatedUser) : BaseApiController
+    public class UsersController(IUserServiceAsync userServiceAsync, IAuthenticatedUser authenticatedUser, IUserProfileService userProfileService) : BaseApiController
     {
         [HttpGet]
         public async Task<ActionResult> GetUsers()
@@ -32,8 +32,28 @@ namespace matcha.API.Controllers
         public async Task<ActionResult> GetUserByUserId(Guid userId)
         {
             var user = await userServiceAsync.GetUserByIdAsync(userId);
+            var likeStatus = await userServiceAsync.GetLikeStatusAsync(userId);
 
-            return Ok(user);
+            return Ok(new
+            {
+                user.FirstName,
+                user.LastName,
+                user.UserName,
+                user.Email,
+                user.Gender,
+                user.DateOfBirth,
+                user.Biography,
+                SexualPreferences = user.PreferredGender,
+                user.Interests,
+                user.City,
+                user.Country,
+                user.Photos,
+                user.LastActive,
+                user.FameRating,
+                IsLikedByMe = likeStatus.IsLikedByMe,
+                IsLikedByThem = likeStatus.IsLikedByThem,
+                IsMatched = likeStatus.IsMatched,
+            });
         }
 
         [HttpPost("upload-image")]
@@ -56,9 +76,12 @@ namespace matcha.API.Controllers
         }
 
         [HttpPut("set-main-photo/{photoId:Guid}")]
-        public async Task<ActionResult> SetMainPhoto(Guid photoId, Guid userId)
+        public async Task<ActionResult> SetMainPhoto(Guid photoId)
         {
-            if (await userServiceAsync.SetMainPhoto(userId, photoId))
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return BadRequest("Cannot get user ID from token.");
+
+            if (await userServiceAsync.SetMainPhoto(photoId, Guid.Parse(userId)))
                 return NoContent();
 
             return BadRequest("There was an issue setting the main photo. Please try again later.");
@@ -101,7 +124,7 @@ namespace matcha.API.Controllers
         [HttpGet("profile-views")]
         public async Task<ActionResult> GetProfileViews()
         {
-            var result = await userServiceAsync.GetWhoViewedMeAsync(authenticatedUser.UserId);
+            var result = await userProfileService.GetWhoViewedMeAsync(authenticatedUser.UserId);
             return Ok(result);
         }
 
@@ -132,8 +155,7 @@ namespace matcha.API.Controllers
         [HttpGet("profile-likes")]
         public async Task<ActionResult> GetProfileLikes()
         {
-            var result = await userServiceAsync.GetWhoLikedMeAsync(authenticatedUser.UserId);
-
+            var result = await userProfileService.GetWhoLikedMeAsync(authenticatedUser.UserId);
             return Ok(result);
         }
     }

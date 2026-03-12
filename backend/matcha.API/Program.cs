@@ -15,12 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContextRegistration(builder.Configuration);
+builder.Services.AddAutoMapper(typeof(AutoMapperConfiguration));
 
 //builder.Services.AddDbContextRegistration(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddApplicationRepositories(builder.Configuration);
 builder.Services.AddDomainServices(builder.Configuration);
-builder.Services.AddAutoMapper(typeof(AutoMapperConfiguration));
 builder.Services.AddApplicationExtensions(builder.Configuration);
 builder.Services.AddEmailService(builder.Configuration);
 builder.Services.AddControllers()
@@ -101,6 +101,12 @@ using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<Seed>();
     await seeder.SeedAsync();
+}
+
+var seedOnly = Environment.GetEnvironmentVariable("ASPNETCORE_SEED_ONLY");
+if (string.Equals(seedOnly, "true", StringComparison.OrdinalIgnoreCase) || seedOnly == "1")
+{
+    return;
 }
 
 app.Run();

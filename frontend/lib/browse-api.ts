@@ -93,8 +93,10 @@ export const browseApi = {
     api.post("/api/search/preferences/reset"),
 
   getInterests: async () => {
-    const res = await api.get<{ data?: GetInterestsDto[]; Data?: GetInterestsDto[] }>("/api/Interest/GetAll");
-    const arr = res?.data ?? res?.Data;
+    const res = await api.get<{ data?: GetInterestsDto[]; Data?: GetInterestsDto[] } | GetInterestsDto[]>(
+      "/api/Interest/GetAll"
+    );
+    const arr = Array.isArray(res) ? res : (res?.data ?? res?.Data);
     return Array.isArray(arr) ? arr : [];
   },
 

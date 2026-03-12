@@ -1,4 +1,4 @@
-﻿using matcha.Application.Dtos.Common;
+﻿using matcha.Application.Dtos.ChatDtos;
 using matcha.Application.Dtos.RealtimeDtos;
 using matcha.Application.Exceptions;
 using matcha.Application.Interfaces.Repositories;
@@ -32,12 +32,17 @@ namespace matcha.DomainServices.Services.Message
                 throw new NotFoundException("Message not found or you do not have permission to delete it.");
             }
 
+            var conversationId = message.ConversationId;
+
             var success = await _unitOfWork.GetRepository<IMessageRepositoryAsync>().DeleteMessageAsync(messageId, userId);
 
             if (!success)
             {
                 throw new Exception("Failed to delete the message. Please try again.");
             }
+
+            // Broadcast deletion to conversation group
+            await _notificationService.SendMessageDeletedToConversationAsync(conversationId, messageId);
 
             return new Response<bool>(true)
             {
@@ -54,14 +59,13 @@ namespace matcha.DomainServices.Services.Message
             return messages;
         }
 
-        public async Task<Response<PaginatedResult<Domain.Entities.Message>>> GetConversationMessagesPagedAsync(
+        public async Task<Response<ConversationMessagesResponseDto>> GetConversationMessagesPagedAsync(
             Guid conversationId,
             int pageNumber = 1,
             int pageSize = 20)
         {
             await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
 
-            // Validation
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 20;
             if (pageSize > 100) pageSize = 100;
@@ -69,7 +73,16 @@ namespace matcha.DomainServices.Services.Message
             var paginatedResult = await _unitOfWork.GetRepository<IMessageRepositoryAsync>()
                 .GetConversationMessagesPagedAsync(conversationId, pageNumber, pageSize);
 
-            return new Response<PaginatedResult<Domain.Entities.Message>>(paginatedResult)
+            var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>().FindAsync(conversationId);
+
+            var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(conversation.User1Id, conversation.User2Id);
+
+            var responseDto = new ConversationMessagesResponseDto
+            {
+                Messages = paginatedResult,
+                IsBlocked = !isMatched
+            };
+            return new Response<ConversationMessagesResponseDto>(responseDto)
             {
                 Message = "Messages retrieved successfully.",
             };
@@ -188,6 +201,9 @@ namespace matcha.DomainServices.Services.Message
             {
                 throw new Exception("Failed to update the message. Please try again.");
             }
+
+            // Broadcast update to conversation group
+            await _notificationService.SendMessageUpdatedToConversationAsync(message.ConversationId, messageId, newContent);
 
             return new Response<bool>(true)
             {

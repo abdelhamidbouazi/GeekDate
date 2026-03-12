@@ -4,6 +4,7 @@ using matcha.Application.Features.Interests.Commands.DeleteInterest;
 using matcha.Application.Features.Interests.Commands.UptdaeInterest;
 using matcha.Application.Features.Interests.Queries.GetInterest;
 using matcha.Application.Features.Interests.Queries.GetInterests;
+using matcha.Application.Features.UserIneterests.Queries.GetInterestsList;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,13 @@ namespace matcha.API.Controllers
             return Ok(await _mediator.Send(new GetInterestsQuery()));
         }
 
-        [HttpGet("{interestId}")]
+        [HttpGet("list")]
+        public async Task<IActionResult> GetList()
+        {
+            return Ok(await _mediator.Send(new GetInterestsListQuery()));
+        }
+
+        [HttpGet("{interestId:guid}")]
         public async Task<ActionResult> GetById(Guid interestId)
         {
             return Ok(await _mediator.Send(new GetInterestQuery { Id = interestId }));

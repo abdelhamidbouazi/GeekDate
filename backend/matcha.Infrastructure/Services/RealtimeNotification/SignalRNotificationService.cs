@@ -24,6 +24,20 @@ namespace matcha.Infrastructure.Services.RealtimeNotification
                  .SendAsync("ReceiveMessage", realtimeMessageDto);
         }
 
+        public async Task SendMessageUpdatedToConversationAsync(Guid conversationId, Guid messageId, string newText)
+        {
+            await _hubContext.Clients
+                 .Group($"conv-{conversationId}")
+                 .SendAsync("MessageUpdated", new { messageId = messageId.ToString(), messageText = newText, conversationId = conversationId.ToString() });
+        }
+
+        public async Task SendMessageDeletedToConversationAsync(Guid conversationId, Guid messageId)
+        {
+            await _hubContext.Clients
+                 .Group($"conv-{conversationId}")
+                 .SendAsync("MessageDeleted", new { messageId = messageId.ToString(), conversationId = conversationId.ToString() });
+        }
+
         public async Task SendNotificationAsync(Guid toUserId, Guid fromUserId, NotificationType type, string message = "", Guid? conversationId = null)
         {
             var notification = new matcha.Domain.Entities.Notification
@@ -79,6 +93,12 @@ namespace matcha.Infrastructure.Services.RealtimeNotification
             await _hubContext.Clients
                  .User(userId.ToString())
                  .SendAsync("ReceiveNotification", realtimeNotificationDto);
+        }
+        public async Task SendUserBlockedToConversationAsync(Guid conversationId)
+        {
+            await _hubContext.Clients
+                .Group($"conv-{conversationId}")
+                .SendAsync("UserBlocked", new { conversationId = conversationId.ToString() });
         }
     }
 }

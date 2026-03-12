@@ -36,9 +36,13 @@ namespace matcha.API.Controllers
             if (currentUser == null)
                 return Unauthorized();
 
-            var conversation = await _conversationServiceAsync.GetConversationBetweenUsersAsync(currentUser.Id, userId);
+            var conversation = await _conversationServiceAsync
+                .GetConversationBetweenUsersAsync(currentUser.Id, userId);
 
-            if (conversation.User1Id != currentUser.Id)
+            if (conversation == null)
+                return NotFound();
+
+            if (conversation.User1Id != currentUser.Id && conversation.User2Id != currentUser.Id)
                 return Forbid();
 
             return Ok(conversation);
@@ -52,7 +56,7 @@ namespace matcha.API.Controllers
             if (currentUser == null)
                 return Unauthorized();
 
-            var conversation = await _conversationServiceAsync.CreateConversationWithUserAsync(userId);
+            var conversation = await _conversationServiceAsync.GetOrCreateConversationAsync(userId);
 
             return CreatedAtAction(nameof(GetConversationWithUser), new { userId = userId }, conversation);
         }

@@ -8,13 +8,10 @@ COPY ["matcha.DomainServices/matcha.DomainServices.csproj", "matcha.DomainServic
 COPY ["matcha.Application/matcha.Application.csproj", "matcha.Application/"]
 COPY ["matcha.Infrastructure/matcha.Infrastructure.csproj", "matcha.Infrastructure/"]
 COPY ["matcha.Domain/matcha.Domain.csproj", "matcha.Domain/"]
+COPY ["matcha.Shared/matcha.Shared.csproj", "matcha.Shared/"]
 
 # Restore all project dependencies
 RUN dotnet restore "./matcha.API/matcha.API.csproj"
-RUN dotnet restore "./matcha.DomainServices/matcha.DomainServices.csproj"
-RUN dotnet restore "./matcha.Application/matcha.Application.csproj"
-RUN dotnet restore "./matcha.Infrastructure/matcha.Infrastructure.csproj"
-RUN dotnet restore "./matcha.Domain/matcha.Domain.csproj"
 
 # Copy the rest of the application files
 COPY . .
@@ -32,8 +29,9 @@ RUN dotnet publish "./matcha.API.csproj" -c Release -o /app/publish /p:UseAppHos
 # Use the .NET 8.0 ASP.NET image as the base image for runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 3000
-EXPOSE 3001
+EXPOSE 8080
+
+ENV ASPNETCORE_URLS=http://+:8080
 
 # Copy the published files to the final image
 COPY --from=publish /app/publish .

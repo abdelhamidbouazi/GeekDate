@@ -1,5 +1,6 @@
 ﻿using matcha.Application.Dtos.Users;
 using matcha.Application.Interfaces.Services;
+using matcha.Application.ResponseWrappers;
 using matcha.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,7 @@ namespace matcha.API.Controllers
             {
                 var userId = GetCurrentUserId();
                 var preferences = await _searchPreferencesService.GetByUserIdAsync(userId);
-                return Ok(preferences);
+                return Ok(new Response<SearchPreferencesDto>(preferences));
             }
             catch (ArgumentException ex)
             {

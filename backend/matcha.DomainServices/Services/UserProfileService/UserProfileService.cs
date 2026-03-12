@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using matcha.Application.Dtos.Profile;
 using matcha.Application.Dtos.UserBlocks;
 using matcha.Application.Dtos.UserLikes;
@@ -36,6 +36,20 @@ namespace matcha.DomainServices.Services.UserService
             _userServiceAsync = userServiceAsync;
             _configuration = configuration;
             _authenticatedUser = authenticatedUser;
+        }
+
+        private static string SanitizeExceptionMessage(Exception ex, string prefix)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            var isDbError = msg.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("Invalid column name", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("Cannot insert", StringComparison.OrdinalIgnoreCase)
+                || msg.Contains("foreign key", StringComparison.OrdinalIgnoreCase)
+                || ex.GetType().Name.Contains("Db", StringComparison.OrdinalIgnoreCase)
+                || ex.GetType().Name.Contains("Sql", StringComparison.OrdinalIgnoreCase);
+            return isDbError
+                ? $"{prefix}. Please try again or contact support if the problem persists."
+                : $"{prefix}: {msg}";
         }
 
         private async Task<AppUser> GetUserAsync(Guid userId)
@@ -162,11 +176,58 @@ namespace matcha.DomainServices.Services.UserService
             catch (Exception ex)
             {
                 await _unitOfWork.RollBackTransaction();
-                throw new ApiException($"Failed to complete user profile: {ex.Message}");
+                throw new ApiException(SanitizeExceptionMessage(ex, "Failed to complete user profile"));
             }
         }
 
         // CompleteBasicUserProfileAsync
+        //public async Task<UserProfileDto> CompleteBasicUserProfileAsync(BasicUserProfileDto basicUserProfileDto)
+        //{
+        //    var user = await GetUserAsync(_authenticatedUser.UserId);
+        //    List<ImageDto> listImages = new List<ImageDto>();
+
+        //    try
+        //    {
+        //        _mapper.Map(basicUserProfileDto, user);
+
+        //        // Upload images first, outside of main transaction
+        //        //listImages = await UploadUserImagesAsync(basicUserProfileDto., user.Id);
+
+        //        // Start transaction for database operations
+        //        await _unitOfWork.CreateTransaction();
+
+        //        // Add photos to user
+        //        await AssociatePhotosWithUserAsync(listImages, user);
+
+        //        user.IsBasicInfoComplete = true;
+
+        //        await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
+
+        //        await _unitOfWork.CompleteAsync();
+
+        //        await _unitOfWork.GetRepository<IUserSearchPreferenceRepositoryAsync>().CreateDefaultUserPreferencesAsync(user.Id);
+
+        //        // Commit transaction
+        //        await _unitOfWork.CommitTransaction();
+
+        //        return _mapper.Map<UserProfileDto>(user);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Rollback database changes if transaction was started
+        //        await _unitOfWork.RollBackTransaction();
+
+        //        // Clean up uploaded images
+        //        foreach (var image in listImages)
+        //        {
+        //            await _userServiceAsync.DeletePhoto(_authenticatedUser.UserId, image.Id);
+        //        }
+
+        //        throw new ApiException($"Failed to complete user profile: {ex.Message}");
+        //    }
+        //}
+
+
         public async Task<UserProfileDto> CompleteBasicUserProfileAsync(BasicUserProfileDto basicUserProfileDto)
         {
             var user = await GetUserAsync(_authenticatedUser.UserId);
@@ -174,45 +235,84 @@ namespace matcha.DomainServices.Services.UserService
 
             try
             {
-                _mapper.Map(basicUserProfileDto, user);
+                // ✅ MAPPING MANUEL (évite AutoMapper avec IFormFile)
+                user.Gender = basicUserProfileDto.Gender;
+                user.DateOfBirth = basicUserProfileDto.DateOfBirth;
 
-                // Upload images first, outside of main transaction
-                //listImages = await UploadUserImagesAsync(basicUserProfileDto., user.Id);
+                Console.WriteLine($"✅ Manual mapping: Gender={user.Gender}, DOB={user.DateOfBirth}");
 
-                // Start transaction for database operations
+                // ✅ Créer transaction
                 await _unitOfWork.CreateTransaction();
 
-                // Add photos to user
-                await AssociatePhotosWithUserAsync(listImages, user);
+                // ✅ Upload MainPicture
+                if (basicUserProfileDto.MainPicture != null)
+                {
+                    Console.WriteLine("📸 Uploading main picture...");
+                    var mainPhotoDto = await _userServiceAsync.UploadImage(
+                        user.Id,
+                        basicUserProfileDto.MainPicture,
+                        isMain: true
+                    );
+                    listImages.Add(mainPhotoDto);
+                    user.PhotoProfileUrl = mainPhotoDto.Url;
+                    Console.WriteLine($"✅ Main picture uploaded: {mainPhotoDto.Url}");
+                }
 
+                // ✅ Upload Photos additionnelles
+                if (basicUserProfileDto.Photos != null && basicUserProfileDto.Photos.Any())
+                {
+                    Console.WriteLine($"📸 Uploading {basicUserProfileDto.Photos.Count} photos...");
+                    foreach (var photoFile in basicUserProfileDto.Photos)
+                    {
+                        var photoDto = await _userServiceAsync.UploadImage(
+                            user.Id,
+                            photoFile,
+                            isMain: false
+                        );
+                        listImages.Add(photoDto);
+                        Console.WriteLine($"✅ Photo uploaded: {photoDto.Url}");
+                    }
+                }
+
+                // ✅ Update user
                 user.IsBasicInfoComplete = true;
-
                 await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
-
-                await _unitOfWork.GetRepository<IUserSearchPreferenceRepositoryAsync>().CreateDefaultUserPreferencesAsync(user.Id);
-
                 await _unitOfWork.CompleteAsync();
 
-                // Commit transaction
+                // ✅ Créer préférences par défaut
+                await _unitOfWork.GetRepository<IUserSearchPreferenceRepositoryAsync>()
+                    .CreateDefaultUserPreferencesAsync(user.Id);
+
+                // ✅ Commit
                 await _unitOfWork.CommitTransaction();
+
+                Console.WriteLine($"✅ Profile completed for user {user.Id}");
 
                 return _mapper.Map<UserProfileDto>(user);
             }
             catch (Exception ex)
             {
-                // Rollback database changes if transaction was started
+                Console.WriteLine($"❌ Error: {ex.Message}");
+
+                // ✅ Rollback
                 await _unitOfWork.RollBackTransaction();
 
-                // Clean up uploaded images
+                // ✅ Nettoyer Cloudinary
                 foreach (var image in listImages)
                 {
-                    await _userServiceAsync.DeletePhoto(_authenticatedUser.UserId, image.Id);
+                    try
+                    {
+                        await _userServiceAsync.DeletePhoto(_authenticatedUser.UserId, image.Id);
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        Console.WriteLine($"⚠️ Cleanup failed for {image.Id}: {cleanupEx.Message}");
+                    }
                 }
 
-                throw new ApiException($"Failed to complete user profile: {ex.Message}");
+                throw new ApiException(SanitizeExceptionMessage(ex, "Failed to complete user profile"));
             }
         }
-
         public async Task<bool> DeleteUser(Guid id)
         {
             var userProfile = await _unitOfWork.GetRepository<IUserRepositoryAsync>().FindAsync(id);
@@ -258,11 +358,16 @@ namespace matcha.DomainServices.Services.UserService
 
                 var createdUserInterests = await CreateUserInterestsAndSaveAsync(userProfile.Id, profileCommand.UserInterestIds);
 
-                userProfile = _mapper.Map(profileCommand, userProfile);
+                // Manual mapping to avoid AutoMapper issues with complex entity
+                userProfile.FirstName = profileCommand.FirstName;
+                userProfile.LastName = profileCommand.LastName;
+                userProfile.Email = profileCommand.Email;
+                userProfile.Gender = profileCommand.Gender;
+                userProfile.Biography = profileCommand.Biography;
+                userProfile.PreferredGender = profileCommand.SexualPreferences;
+                userProfile.City = profileCommand.City;
 
                 await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(userProfile);
-
-                await _unitOfWork.CompleteAsync();
 
                 await _unitOfWork.CommitTransaction();
 

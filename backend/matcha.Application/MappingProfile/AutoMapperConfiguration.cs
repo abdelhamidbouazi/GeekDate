@@ -1,8 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using matcha.Application.Dtos.InterestDtos;
 using matcha.Application.Dtos.Profile;
 using matcha.Application.Dtos.UserInterestsDtos;
 using matcha.Application.Dtos.Users;
+using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
 using matcha.Domain.Entities;
 
 namespace matcha.Application.MappingProfile
@@ -13,10 +14,13 @@ namespace matcha.Application.MappingProfile
         {
             #region Interests
 
-            CreateMap<Interest, GetInterestsDto>().ReverseMap();
+            CreateMap<Interest, GetInterestsDto>()
+                .ForMember(d => d.Users, opt => opt.Ignore())
+                .ReverseMap();
             CreateMap<Interest, GetInterestDto>().ReverseMap();
             CreateMap<Interest, CreateInterestDto>().ReverseMap();
-            CreateMap<Interest, InterestDto>().ReverseMap();
+            CreateMap<Interest, InterestDto>()
+                .ReverseMap();
             CreateMap<UpdateInterestDto, Interest>().ReverseMap();
 
             #endregion
@@ -36,28 +40,52 @@ namespace matcha.Application.MappingProfile
 
             #endregion
 
-            #region Users
 
+            #region Users
             CreateMap<CreateUserProfileDto, UserProfileDto>().ReverseMap();
             CreateMap<AppUser, UserProfileDto>();
-            CreateMap<AppUser, ConnectedUserProfileDto>().ForMember(x => x.Pictures, t => t.MapFrom(y => y.Photos));
-            // CreateMap<BasicUserProfileDto, AppUser>()
-            //.ForMember(dest => dest.Photos, opt => opt.Ignore())
-            //.ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DateOfBirth)))
-            //.ReverseMap()
-            //.ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => src.DateOfBirth));
+            CreateMap<AppUser, ConnectedUserProfileDto>()
+                .ForMember(x => x.Pictures, t => t.MapFrom(y => y.Photos));
+
+            // ✅ BasicUserProfileDto -> AppUser (ONE WAY ONLY!)
             CreateMap<BasicUserProfileDto, AppUser>()
-                  .ForMember(dest => dest.Photos, opt => opt.Ignore())
-                  .ReverseMap();
-            CreateMap<UpdateUserProfileDto, AppUser>().ReverseMap();
+                .ForMember(dest => dest.Photos, opt => opt.Ignore())
+                .ForMember(dest => dest.PhotoProfileUrl, opt => opt.Ignore())
+                .ForSourceMember(src => src.Photos, opt => opt.DoNotValidate())
+                .ForSourceMember(src => src.MainPicture, opt => opt.DoNotValidate());
+
+            // ✅ UpdateUserProfileDto mappings (SANS DOUBLONS!)
+            CreateMap<UpdateUserProfileDto, AppUser>();  // ← UN SEUL mapping, SANS ReverseMap!
             CreateMap<UpdateUserProfileDto, UserProfileDto>().ReverseMap();
             CreateMap<UpdatedUserProfileDto, AppUser>().ReverseMap();
-            CreateMap<BasicUserProfileDto, UpdateUserProfileDto>().ReverseMap();
-            CreateMap<UpdateUserProfileDto, AppUser>().ReverseMap();
-            CreateMap<PreferencesAndInterestsDto, AppUser>().ReverseMap();
-            CreateMap<UpdateUserProfileDto, AppUser>();
-            CreateMap<UpdateUserProfileDto, BasicUserProfileDto>();
 
+            // ❌ SUPPRIMÉ COMPLÈTEMENT - crée des chaînes vers IFormFile
+            // CreateMap<BasicUserProfileDto, UpdateUserProfileDto>().ReverseMap();
+
+            // ✅ Si tu en as VRAIMENT besoin (je doute), crée ONE WAY:
+            // CreateMap<BasicUserProfileDto, UpdateUserProfileDto>();
+
+            CreateMap<UpdateUserProfileCommand, AppUser>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Photos, opt => opt.Ignore())
+                .ForMember(dest => dest.PhotoProfileUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.Interests, opt => opt.Ignore())
+                .ForMember(dest => dest.UserLikes, opt => opt.Ignore())
+                .ForMember(dest => dest.UserBlocks, opt => opt.Ignore())
+                .ForMember(dest => dest.Tags, opt => opt.Ignore())
+                .ForMember(dest => dest.ConfirmEmailTokens, opt => opt.Ignore())
+                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+                .ForMember(dest => dest.PasswordSalt, opt => opt.Ignore())
+                .ForMember(dest => dest.PreferredGender, opt => opt.MapFrom(src => src.SexualPreferences));
+
+            CreateMap<PreferencesAndInterestsDto, AppUser>().ReverseMap();
+
+            // ❌ SUPPRIMÉ - doublon inutile
+            // CreateMap<UpdateUserProfileDto, BasicUserProfileDto>();
+            #endregion
+
+            #region SearchPreferences
+            CreateMap<SearchPreferencesDto, UserSearchPreference>().ReverseMap();
             #endregion
 
             #region Photo

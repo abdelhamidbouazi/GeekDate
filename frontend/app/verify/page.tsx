@@ -77,17 +77,23 @@ function VerifyContent() {
 
   const fetchInterests = useCallback(async () => {
     setInterestsLoading(true)
+    setError("")
     try {
       const list = await browseApi.getInterests()
-      setInterests(
-        list.map((i) => ({
-          id: i.id ?? i.Id,
-          Id: i.Id ?? i.id,
-          name: i.name ?? i.Name,
+      const mapped = list
+        .map((i, idx) => ({
+          id: i.id ?? i.Id ?? (i as { Id?: string }).Id,
+          Id: i.Id ?? i.id ?? (i as { Id?: string }).Id,
+          name: i.name ?? i.Name ?? (i as { Name?: string }).Name ?? `Interest ${idx}`,
         }))
-      )
-    } catch {
+        .filter((i) => i.id || i.Id)
+      setInterests(mapped)
+      if (mapped.length === 0 && list.length > 0) {
+        setError("Interests loaded but missing IDs. Please refresh or contact support.")
+      }
+    } catch (err) {
       setInterests([])
+      setError(err instanceof Error ? err.message : "Failed to load interests. Please refresh.")
     } finally {
       setInterestsLoading(false)
     }
@@ -409,7 +415,17 @@ function VerifyContent() {
                     {interestsLoading ? (
                       <p className="text-muted-foreground text-sm">Loading interests...</p>
                     ) : interests.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No interests available. Please try again later.</p>
+                      <div className="flex flex-col gap-2">
+                        <p className="text-muted-foreground text-sm">No interests available.</p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fetchInterests()}
+                        >
+                          Retry
+                        </Button>
+                      </div>
                     ) : (
                       <div className="flex flex-wrap gap-3">
                         {interests.map((item) => {

@@ -8,5 +8,6 @@ namespace matcha.Application.Interfaces.Services
         Task<Conversation> GetConversationBetweenUsersAsync(Guid user1Id, Guid user2Id);
         Task<Conversation> CreateConversationWithUserAsync(Guid userId);
         Task<bool> DeleteConversationAsync(Guid conversationId);
+        Task<Conversation> GetOrCreateConversationAsync(Guid userId);
     }
 }

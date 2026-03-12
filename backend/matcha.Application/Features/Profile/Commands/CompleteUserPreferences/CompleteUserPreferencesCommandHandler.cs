@@ -28,14 +28,14 @@ namespace matcha.Application.Features.Profile.Commands.CompleteUserPreferences
             if (!request.UserInterestIds.Any())
                 errors.Add(nameof(request.UserInterestIds), "At least you need to choose 1 interest");
 
-            if (!request.Pictures.Any())
+            if (request.Pictures is null || !request.Pictures.Any())
                 errors.Add(nameof(request.Pictures), "At least you need to upload 1 picture");
 
-            if (request.Pictures.Count() > 5)
+            if (request.Pictures?.Count() > 5)
                 errors.Add(nameof(request.Pictures), "you are not able to upload more than 5 pictures");
 
-            if (request.Gender == Domain.Common.Enums.Gender.Unknonw)
-                errors.Add(nameof(request.Gender), "Your gender must be specified");
+            //if (request.Gender == Domain.Common.Enums.Gender.Unknonw)
+            //    errors.Add(nameof(request.Gender), "Your gender must be specified");
 
             if (errors.Any())
                 throw new ValidationException("Validation errors occurs", errors);

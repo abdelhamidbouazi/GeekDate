@@ -1,6 +1,7 @@
 ﻿using matcha.Application.Helper;
 using matcha.Application.Interfaces.Repositories;
 using Microsoft.Data.SqlClient;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
 namespace matcha.Infrastructure.Repositories
@@ -181,7 +182,7 @@ namespace matcha.Infrastructure.Repositories
                 throw new ArgumentNullException(nameof(entity));
             ClearAll();
             // use reflection to get all the properties of the entity
-            var properties = typeof(T).GetProperties().Where(x => IsSimple(x.PropertyType)).OrderBy(x => x.Name);
+            var properties = typeof(T).GetProperties().Where(x => IsSimple(x.PropertyType) && !Attribute.IsDefined(x, typeof(NotMappedAttribute))).OrderBy(x => x.Name);
 
             var columns = properties.Select(p => p.Name).ToArray();
 
@@ -267,7 +268,7 @@ namespace matcha.Infrastructure.Repositories
 
             _query = $"UPDATE {tableName}s SET ";
 
-            var properties = entity.GetType().GetProperties().Where(x => IsSimple(x.PropertyType));
+            var properties = entity.GetType().GetProperties().Where(x => IsSimple(x.PropertyType) && !Attribute.IsDefined(x, typeof(NotMappedAttribute)));
 
             foreach (var prop in properties)
             {
