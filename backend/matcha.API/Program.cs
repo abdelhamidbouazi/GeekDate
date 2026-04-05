@@ -6,7 +6,6 @@ using matcha.Application.MappingProfile;
 using matcha.DomainServices.Extensions;
 using matcha.Infrastructure.Extensions;
 using matcha.Infrastructure.Hubs;
-using matcha.Infrastructure.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
@@ -98,17 +97,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<ChatHub>("/chatHub");
-
-using (var scope = app.Services.CreateScope())
-{
-    var seeder = scope.ServiceProvider.GetRequiredService<Seed>();
-    await seeder.SeedAsync();
-}
-
-var seedOnly = Environment.GetEnvironmentVariable("ASPNETCORE_SEED_ONLY");
-if (string.Equals(seedOnly, "true", StringComparison.OrdinalIgnoreCase) || seedOnly == "1")
-{
-    return;
-}
 
 app.Run();

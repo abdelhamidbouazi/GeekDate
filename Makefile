@@ -1,5 +1,5 @@
 .PHONY: up down build restart logs logs-backend logs-frontend logs-db ps \
-	shell-backend shell-frontend shell-db seed migrate reset-db clean help
+	shell-backend shell-frontend shell-db migrate reset-db clean clean-data help
 
 COMPOSE := docker compose
 
@@ -38,24 +38,20 @@ shell-frontend:
 shell-db:
 	$(COMPOSE) exec sqlserver /bin/bash
 
-seed: up
-	@echo "Waiting for sqlserver to be healthy..."
-	@sleep 40
-	@bash -c 'set -a; [ -f .env ] && . ./.env; set +a; ./backend/scripts/restore-from-backup.sh'
-
-migrate: seed
+migrate: up
+	@echo "Backend applies migrations on startup."
 
 reset-db: down
 	$(COMPOSE) down -v
-	$(COMPOSE) up -d sqlserver
-	@echo "Waiting for sqlserver to be healthy..."
-	@sleep 40
-	@bash -c 'set -a; [ -f .env ] && . ./.env; set +a; ./backend/scripts/restore-from-backup.sh'
 	$(COMPOSE) up -d --build
 
 clean: down
 	$(COMPOSE) down -v
 	docker system prune -f
+
+clean-data:
+	$(COMPOSE) down -v
+	@echo "All data (volumes) removed."
 
 help:
 	@echo "Matcha Local Development - Makefile targets"
@@ -72,8 +68,8 @@ help:
 	@echo "  make shell-backend - Shell into backend container"
 	@echo "  make shell-frontend- Shell into frontend container"
 	@echo "  make shell-db     - Shell into SQL Server container"
-	@echo "  make seed         - Run database seed (migrations + 500 profiles)"
-	@echo "  make migrate      - Alias for seed"
+	@echo "  make migrate      - Start stack (migrations auto-apply on backend)"
 	@echo "  make reset-db     - Full DB reset (remove volumes, restart stack)"
 	@echo "  make clean        - Stop stack, remove volumes, prune Docker"
+	@echo "  make clean-data   - Stop stack and remove all volumes (database, etc.)"
 	@echo "  make help         - Show this help"

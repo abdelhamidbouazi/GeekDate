@@ -127,7 +127,8 @@ export function RightFilterSidebar({
     setLocalFilters(defaultFilters)
     onFiltersChange(defaultFilters)
     onReset?.()
-  }, [onFiltersChange, onReset])
+    onOpenChange(false)
+  }, [onFiltersChange, onReset, onOpenChange])
 
   const handleApply = useCallback(() => {
     onFiltersChange(localFilters)

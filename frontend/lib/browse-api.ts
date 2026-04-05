@@ -55,6 +55,8 @@ const SORT_BY_MAP = {
 
 export type FiltersSortBy = keyof typeof SORT_BY_MAP;
 
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function filtersToSearchPreferences(
   filters: {
     age: [number, number];
@@ -65,13 +67,14 @@ export function filtersToSearchPreferences(
     sortDir: "asc" | "desc";
   }
 ): SearchPreferencesRequest {
+  const validInterestIds = filters.tagIds.filter((id) => GUID_REGEX.test(String(id)));
   return {
     MinAge: filters.age[0],
     MaxAge: filters.age[1],
     MinFameRating: filters.fameRating,
     MaxFameRating: 200,
     MaxDistanceKm: filters.distance,
-    SavedInterestIds: filters.tagIds,
+    SavedInterestIds: validInterestIds,
     SortBy: SORT_BY_MAP[filters.sortBy] ?? "CommonTags",
     SortDescending: filters.sortDir === "desc",
   };
@@ -83,8 +86,13 @@ export const browseApi = {
   searchUsers: (prefs: SearchPreferencesRequest) =>
     api.post<BrowseUserDto[]>("/api/Matchmaking/search", prefs),
 
-  getSearchPreferences: () =>
-    api.get<SearchPreferencesDto>("/api/search/preferences"),
+  getSearchPreferences: async () => {
+    const r = await api.get<{
+      data?: SearchPreferencesDto;
+      Data?: SearchPreferencesDto;
+    }>("/api/search/preferences");
+    return r?.data ?? r?.Data ?? null;
+  },
 
   updateSearchPreferences: (prefs: SearchPreferencesRequest) =>
     api.put("/api/search/preferences", prefs),

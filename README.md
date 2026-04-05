@@ -81,6 +81,32 @@ matcha/
 
 See [.env.example](.env.example) for all supported variables.
 
+## Dev-only: Impersonate a user (JWT + reset link)
+
+For local development, you can impersonate an existing user by **username or email** and get back a signed JWT plus a reset-password link.
+
+- **Endpoint**: `POST /api/dev/impersonate`
+- **Enabled only when**: `ASPNETCORE_ENVIRONMENT=Development`
+- **Auth**: `X-Dev-Secret` header must match `DEV_IMPERSONATE_SECRET`
+
+Example:
+
+```bash
+export DEV_IMPERSONATE_SECRET="dev-secret-change-me"
+
+curl -s -X POST "http://localhost:8080/api/dev/impersonate" \
+  -H "Content-Type: application/json" \
+  -H "X-Dev-Secret: ${DEV_IMPERSONATE_SECRET}" \
+  -d '{"identifier":"user42"}'
+```
+
+Then paste the returned `token` into the browser console:
+
+```js
+localStorage.setItem("accessToken", "<token>");
+location.href = "/browse";
+```
+
 ## Troubleshooting
 
 - **SQL Server won't start**: Ensure 2GB+ RAM is available. Check with `docker stats`.

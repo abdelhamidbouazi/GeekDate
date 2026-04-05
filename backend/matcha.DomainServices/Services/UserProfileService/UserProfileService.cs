@@ -26,9 +26,10 @@ namespace matcha.DomainServices.Services.UserService
         private readonly IUserServiceAsync _userServiceAsync;
         private readonly IConfiguration _configuration;
         private readonly IAuthenticatedUser _authenticatedUser;
+        private readonly IGeocodingService _geocodingService;
 
         public UserProfileService(IUnitOfWork unitOfWork, IMapper mapper, IEmailService mailService, IUserServiceAsync userServiceAsync, IConfiguration configuration,
-            IAuthenticatedUser authenticatedUser)
+            IAuthenticatedUser authenticatedUser, IGeocodingService geocodingService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -36,6 +37,7 @@ namespace matcha.DomainServices.Services.UserService
             _userServiceAsync = userServiceAsync;
             _configuration = configuration;
             _authenticatedUser = authenticatedUser;
+            _geocodingService = geocodingService;
         }
 
         private static string SanitizeExceptionMessage(Exception ex, string prefix)
@@ -365,7 +367,22 @@ namespace matcha.DomainServices.Services.UserService
                 userProfile.Gender = profileCommand.Gender;
                 userProfile.Biography = profileCommand.Biography;
                 userProfile.PreferredGender = profileCommand.SexualPreferences;
+                var previousCity = userProfile.City;
                 userProfile.City = profileCommand.City;
+
+                // If city changed, attempt to geocode to keep coordinates consistent for distance-based features.
+                if (!string.IsNullOrWhiteSpace(userProfile.City) &&
+                    !string.Equals(previousCity?.Trim(), userProfile.City.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    var country = string.IsNullOrWhiteSpace(userProfile.Country) ? null : userProfile.Country.Trim();
+                    var query = country is null ? userProfile.City : $"{userProfile.City}, {country}";
+                    var coords = await _geocodingService.GeocodeAsync(query);
+                    if (coords.HasValue)
+                    {
+                        userProfile.Latitude = coords.Value.Latitude;
+                        userProfile.Longitude = coords.Value.Longitude;
+                    }
+                }
 
                 await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(userProfile);
 

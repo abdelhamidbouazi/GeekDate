@@ -8,7 +8,6 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
     volumes:
       - sqlserver-data:/var/opt/mssql
-      - ./backend:/backup:ro
     ports:
       - "1433:1433"
     healthcheck:
@@ -29,7 +28,7 @@ services:
       ConnectionStrings__SqlDocker: "Server=sqlserver;Database=matchadb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True"
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: Development
-      SEED_USER_COUNT: ${SEED_USER_COUNT:-500}
+      DEV_IMPERSONATE_SECRET: ${DEV_IMPERSONATE_SECRET:-}
     ports:
       - "8080:8080"
     depends_on:

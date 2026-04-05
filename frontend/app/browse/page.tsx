@@ -17,7 +17,7 @@ import {
   type Interest,
 } from "@/components/filter-sidebar"
 import { Button } from "@/components/ui/button"
-import { Heart, X, MessageCircle, User, MapPin, Code2 } from "lucide-react"
+import { Heart, X, MessageCircle, User, MapPin, Code2, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -73,15 +73,30 @@ function mapBrowseUserToProfile(
 
 function searchPreferencesToFilters(
   prefs: {
-    minAge: number
-    maxAge: number
-    minFameRating: number
-    maxDistanceKm: number | null
-    savedInterestIds: string[]
-    sortBy: string
-    sortDescending: boolean
+    minAge?: number
+    MinAge?: number
+    maxAge?: number
+    MaxAge?: number
+    minFameRating?: number
+    MinFameRating?: number
+    maxDistanceKm?: number | null
+    MaxDistanceKm?: number | null
+    savedInterestIds?: string[]
+    SavedInterestIds?: string[]
+    sortBy?: string
+    SortBy?: string
+    sortDescending?: boolean
+    SortDescending?: boolean
   }
 ): Filters {
+  const minAge = prefs.minAge ?? prefs.MinAge ?? 18
+  const maxAge = prefs.maxAge ?? prefs.MaxAge ?? 100
+  const minFameRating = prefs.minFameRating ?? prefs.MinFameRating ?? 0
+  const maxDistanceKm = prefs.maxDistanceKm ?? prefs.MaxDistanceKm
+  const savedInterestIds = prefs.savedInterestIds ?? prefs.SavedInterestIds ?? []
+  const sortBy = prefs.sortBy ?? prefs.SortBy ?? "Distance"
+  const sortDescending = prefs.sortDescending ?? prefs.SortDescending ?? false
+
   const sortByMap: Record<string, Filters["sortBy"]> = {
     Age: "age",
     Distance: "distance",
@@ -89,12 +104,12 @@ function searchPreferencesToFilters(
     CommonTags: "recommended",
   }
   return {
-    age: [prefs.minAge, prefs.maxAge],
-    distance: prefs.maxDistanceKm ?? 25,
-    fameRating: prefs.minFameRating,
-    tagIds: prefs.savedInterestIds ?? [],
-    sortBy: sortByMap[prefs.sortBy] ?? "recommended",
-    sortDir: prefs.sortDescending ? "desc" : "asc",
+    age: [minAge, maxAge],
+    distance: maxDistanceKm ?? 25,
+    fameRating: minFameRating,
+    tagIds: Array.isArray(savedInterestIds) ? savedInterestIds : [],
+    sortBy: sortByMap[sortBy] ?? "recommended",
+    sortDir: sortDescending ? "desc" : "asc",
   }
 }
 
@@ -255,6 +270,14 @@ export default function BrowsePage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const isMobile = useIsMobile()
+
+  const hasActiveFilters =
+    filters.tagIds.length > 0 ||
+    filters.sortBy !== "recommended" ||
+    filters.age[0] !== defaultFilters.age[0] ||
+    filters.age[1] !== defaultFilters.age[1] ||
+    filters.distance !== defaultFilters.distance ||
+    filters.fameRating !== defaultFilters.fameRating
 
   const buildInterestsMap = useCallback((list: Interest[]) => {
     const map = new Map<string, string>()
@@ -443,6 +466,30 @@ export default function BrowsePage() {
   if (isMobile) {
     return (
       <div className="relative h-screen w-full overflow-hidden bg-black pb-16">
+        {/* Floating filter button */}
+        <Button
+          variant="secondary"
+          size="icon"
+          className="absolute top-4 right-4 z-30 h-10 w-10 rounded-full shadow-lg"
+          onClick={() => setFiltersOpen(true)}
+          aria-label="Open filters"
+        >
+          <Filter className="size-5" />
+        </Button>
+        <RightFilterSidebar
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onApply={handleApplyFilters}
+          onReset={handleResetFilters}
+          interests={interests}
+        />
+        {loading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
+            <p className="text-muted-foreground">Loading profiles...</p>
+          </div>
+        )}
         <div
           ref={containerRef}
           className="h-full w-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
@@ -451,9 +498,17 @@ export default function BrowsePage() {
             WebkitOverflowScrolling: "touch",
           }}
         >
-          {profiles.length === 0 ? (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-muted-foreground">No profiles to show</p>
+          {profiles.length === 0 && !loading ? (
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-6">
+              <p className="text-center text-muted-foreground">
+                {hasActiveFilters
+                  ? "No profiles match your filters. Try adjusting your search."
+                  : "No profiles to show yet. Create another account (or ask a friend) and complete their profile so you have someone to browse."}
+              </p>
+              <Button onClick={() => setFiltersOpen(true)} variant="outline">
+                <Filter className="mr-2 size-4" />
+                Adjust filters
+              </Button>
             </div>
           ) : (
             profiles.map((profile, index) => (
@@ -493,7 +548,12 @@ export default function BrowsePage() {
           onReset={handleResetFilters}
           interests={interests}
         />
-        <div className="flex flex-1 flex-col">
+        <div className="relative flex flex-1 flex-col">
+          {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
+              <p className="text-muted-foreground">Loading profiles...</p>
+            </div>
+          )}
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="px-4 lg:px-6">
@@ -543,8 +603,16 @@ export default function BrowsePage() {
                 </div>
 
                 {profiles.length === 0 && !loading && (
-                  <div className="py-12 text-center">
-                    <p className="text-muted-foreground">No profiles match your filters. Try adjusting your search.</p>
+                  <div className="flex flex-col items-center gap-4 py-12 text-center">
+                    <p className="text-muted-foreground">
+                      {hasActiveFilters
+                        ? "No profiles match your filters. Try adjusting your search."
+                        : "No profiles to show yet. Create another account (or ask a friend) and complete their profile so you have someone to browse."}
+                    </p>
+                    <Button onClick={() => setFiltersOpen(true)} variant="outline">
+                      <Filter className="mr-2 size-4" />
+                      Adjust filters
+                    </Button>
                   </div>
                 )}
               </div>
