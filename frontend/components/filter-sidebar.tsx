@@ -131,10 +131,9 @@ export function RightFilterSidebar({
   }, [onFiltersChange, onReset, onOpenChange])
 
   const handleApply = useCallback(() => {
-    onFiltersChange(localFilters)
     onApply(localFilters)
     onOpenChange(false)
-  }, [localFilters, onFiltersChange, onApply, onOpenChange])
+  }, [localFilters, onApply, onOpenChange])
 
   const handleTagToggle = useCallback((id: string) => {
     setLocalFilters((prev) => ({

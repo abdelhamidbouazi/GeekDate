@@ -1,8 +1,19 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import Image from "next/image"
-import Link from "next/link"
+/**
+ * Browse / discover profiles route.
+ *
+ * Backend calls (see Swagger UI: http://localhost:8080/swagger/index.html):
+ * - Initial load: GET interests + GET search preferences in parallel, then exactly one of
+ *   GET /api/Matchmaking or POST /api/Matchmaking/search (see fetchProfiles).
+ * - Apply filters: PUT /api/search/preferences, then one list fetch.
+ * - Reset filters: POST /api/search/preferences/reset, then one list fetch.
+ * - Like / dislike: POST like-profile or unlike-profile for that user id.
+ *
+ * Each profile photo URL loaded by next/image is a separate HTTP request to the API host
+ * (distinct from the JSON calls above).
+ */
+import { useState, useRef, useEffect, useCallback, type CSSProperties } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -17,248 +28,19 @@ import {
   type Interest,
 } from "@/components/filter-sidebar"
 import { Button } from "@/components/ui/button"
-import { Heart, X, MessageCircle, User, MapPin, Code2, Filter } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Filter } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
   browseApi,
   filtersToSearchPreferences,
-  type BrowseUserDto,
 } from "@/lib/browse-api"
-
-const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Crect fill='%23999' width='400' height='600'/%3E%3Ctext fill='%23fff' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24'%3ENo photo%3C/text%3E%3C/svg%3E"
-
-interface Profile {
-  id: string
-  name: string
-  age: number
-  role: string
-  location: string
-  image: string
-  tags: string[]
-  bio: string
-  match: number
-  online: boolean
-  fameRating: number
-}
-
-function mapBrowseUserToProfile(
-  dto: BrowseUserDto,
-  interestsMap: Map<string, string>
-): Profile {
-  const tags =
-    dto.interestIds?.map((id) => interestsMap.get(id) ?? "").filter(Boolean) ??
-    []
-  const distanceKm = Math.round(dto.distanceInMeters / 1000)
-  const location =
-    dto.distanceInMeters >= 0
-      ? `${distanceKm} km away`
-      : "Distance unknown"
-  const match = Math.min(100, (dto.commonTagsCount ?? 0) * 25)
-
-  return {
-    id: dto.id,
-    name: [dto.firstName, dto.lastName].filter(Boolean).join(" ") || "Unknown",
-    age: dto.age ?? 0,
-    role: "Member",
-    location,
-    image: dto.profilePicture ?? PLACEHOLDER_IMAGE,
-    tags,
-    bio: "",
-    match,
-    online: false,
-    fameRating: dto.fameRating ?? 0,
-  }
-}
-
-function searchPreferencesToFilters(
-  prefs: {
-    minAge?: number
-    MinAge?: number
-    maxAge?: number
-    MaxAge?: number
-    minFameRating?: number
-    MinFameRating?: number
-    maxDistanceKm?: number | null
-    MaxDistanceKm?: number | null
-    savedInterestIds?: string[]
-    SavedInterestIds?: string[]
-    sortBy?: string
-    SortBy?: string
-    sortDescending?: boolean
-    SortDescending?: boolean
-  }
-): Filters {
-  const minAge = prefs.minAge ?? prefs.MinAge ?? 18
-  const maxAge = prefs.maxAge ?? prefs.MaxAge ?? 100
-  const minFameRating = prefs.minFameRating ?? prefs.MinFameRating ?? 0
-  const maxDistanceKm = prefs.maxDistanceKm ?? prefs.MaxDistanceKm
-  const savedInterestIds = prefs.savedInterestIds ?? prefs.SavedInterestIds ?? []
-  const sortBy = prefs.sortBy ?? prefs.SortBy ?? "Distance"
-  const sortDescending = prefs.sortDescending ?? prefs.SortDescending ?? false
-
-  const sortByMap: Record<string, Filters["sortBy"]> = {
-    Age: "age",
-    Distance: "distance",
-    FameRating: "fame",
-    CommonTags: "recommended",
-  }
-  return {
-    age: [minAge, maxAge],
-    distance: maxDistanceKm ?? 25,
-    fameRating: minFameRating,
-    tagIds: Array.isArray(savedInterestIds) ? savedInterestIds : [],
-    sortBy: sortByMap[sortBy] ?? "recommended",
-    sortDir: sortDescending ? "desc" : "asc",
-  }
-}
-
-function TikTokCard({
-  profile,
-  isActive,
-  onLike,
-  onDislike,
-}: {
-  profile: Profile
-  isActive: boolean
-  onLike: (id: string) => void
-  onDislike: (id: string) => void
-}) {
-  const [isLiked, setIsLiked] = useState(false)
-
-  const handleLike = () => {
-    setIsLiked(true)
-    onLike(profile.id)
-  }
-
-  const handleDislike = () => {
-    onDislike(profile.id)
-  }
-
-  return (
-    <div
-      className={cn(
-        "relative h-full w-full flex-shrink-0 snap-start snap-always",
-        isActive && "z-10"
-      )}
-    >
-      <div className="relative h-full w-full overflow-hidden">
-        <Image
-          src={profile.image}
-          alt={`${profile.name}, ${profile.age}`}
-          fill
-          className="object-cover"
-          sizes="100vw"
-          priority={isActive}
-          unoptimized={profile.image.startsWith("data:")}
-        />
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
-
-        {/* Top badges */}
-        <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
-          <div className="flex flex-col gap-2">
-            {profile.online && (
-              <div className="px-3 py-1.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-xs font-semibold text-white">Online</span>
-              </div>
-            )}
-            <div className="px-3 py-1.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20">
-              <span className="text-xs font-bold text-white">{profile.match}% match</span>
-            </div>
-          </div>
-          <div className="px-3 py-1.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20">
-            <div className="flex items-center gap-1">
-              <Heart className="size-3 text-red-400 fill-red-400" />
-              <span className="text-xs font-semibold text-white">{profile.fameRating}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 pb-20">
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-baseline gap-2 mb-1">
-                <h3 className="text-3xl font-bold text-white">{profile.name}</h3>
-                <span className="text-xl text-white/80">{profile.age}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/90 mb-1">
-                <Code2 className="size-3.5" />
-                <span className="text-sm font-medium">{profile.role}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/80 mb-2">
-                <MapPin className="size-3.5" />
-                <span className="text-xs">{profile.location}</span>
-              </div>
-            </div>
-
-            {profile.bio && (
-              <p className="text-white/90 text-sm leading-relaxed line-clamp-2">{profile.bio}</p>
-            )}
-
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {profile.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2.5 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-xs font-medium text-white"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Action buttons on the right */}
-        <div className="absolute right-4 bottom-20 flex flex-col gap-3 z-20">
-          <Button
-            size="icon"
-            className={cn(
-              "h-12 w-12 rounded-full shadow-lg backdrop-blur-md transition-all",
-              isLiked
-                ? "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
-                : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/30"
-            )}
-            onClick={handleLike}
-            aria-label="Like"
-          >
-            <Heart className={cn("size-6", isLiked && "fill-current")} />
-          </Button>
-          <Button
-            size="icon"
-            className="h-12 w-12 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-lg backdrop-blur-md border-2 border-white/30"
-            aria-label="Dislike"
-            onClick={handleDislike}
-          >
-            <X className="size-6" />
-          </Button>
-          <Button
-            size="icon"
-            className="h-12 w-12 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-lg backdrop-blur-md border-2 border-white/30"
-            aria-label="Message"
-            asChild
-          >
-            <Link href={`/messages`}>
-              <MessageCircle className="size-6" />
-            </Link>
-          </Button>
-          <Button
-            size="icon"
-            className="h-12 w-12 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-lg backdrop-blur-md border-2 border-white/30"
-            aria-label="View Profile"
-            asChild
-          >
-            <Link href={`/users/${profile.id}`}>
-              <User className="size-6" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import {
+  mapBrowseUserToProfile,
+  searchPreferencesToFilters,
+  interestsDtoToList,
+  type Profile,
+} from "./browse-helpers"
+import { TikTokCard } from "./tiktok-card"
 
 export default function BrowsePage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -315,45 +97,44 @@ export default function BrowsePage() {
     [filters, interests, buildInterestsMap]
   )
 
+  const fetchProfilesRef = useRef(fetchProfiles)
+  fetchProfilesRef.current = fetchProfiles
+
   useEffect(() => {
     let cancelled = false
+
     async function init() {
       try {
-        const interestsData = await browseApi.getInterests()
+        const [interestsRaw, prefs] = await Promise.all([
+          browseApi.getInterests(),
+          browseApi.getSearchPreferences().catch(() => null),
+        ])
         if (cancelled) return
-        const interestList = interestsData
-          .map((i) => ({ id: i.id ?? i.Id ?? "", name: i.name ?? i.Name ?? "" }))
-          .filter((x): x is { id: string; name: string } => Boolean(x.id && x.name))
-        setInterests(interestList)
 
-        const prefs = await browseApi.getSearchPreferences().catch(() => null)
-        if (cancelled) return
+        const interestList = interestsDtoToList(interestsRaw)
+        setInterests(interestList)
 
         if (prefs) {
           const loadedFilters = searchPreferencesToFilters(prefs)
           setFilters(loadedFilters)
-          await fetchProfiles(loadedFilters, interestList)
+          await fetchProfilesRef.current(loadedFilters, interestList)
         } else {
-          await fetchProfiles(undefined, interestList)
+          await fetchProfilesRef.current(undefined, interestList)
         }
-      } catch {
-        if (!cancelled) {
-          const interestsData = await browseApi.getInterests().catch(() => [])
-          const interestList = Array.isArray(interestsData)
-            ? interestsData
-                .map((i) => ({ id: i.id ?? i.Id ?? "", name: i.name ?? i.Name ?? "" }))
-                .filter((x): x is { id: string; name: string } => Boolean(x.id && x.name))
-            : []
-          if (!cancelled) setInterests(interestList)
-          await fetchProfiles(undefined, interestList)
-        }
+      } catch (err) {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : "Failed to load interests")
+        setInterests([])
+        setProfiles([])
+        setLoading(false)
       }
     }
+
     init()
     return () => {
       cancelled = true
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleApplyFilters = useCallback(
     async (appliedFilters: Filters) => {
@@ -462,11 +243,9 @@ export default function BrowsePage() {
     )
   }
 
-  // Mobile TikTok-style view
   if (isMobile) {
     return (
       <div className="relative h-screen w-full overflow-hidden bg-black pb-16">
-        {/* Floating filter button */}
         <Button
           variant="secondary"
           size="icon"
@@ -526,14 +305,13 @@ export default function BrowsePage() {
     )
   }
 
-  // Desktop grid view
   return (
     <SidebarProvider
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
           "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
+        } as CSSProperties
       }
     >
       <AppSidebar variant="inset" />

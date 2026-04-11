@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { dedupeAsync } from "./request-dedupe";
 
 export interface BrowseUserDto {
   id: string;
@@ -86,13 +87,14 @@ export const browseApi = {
   searchUsers: (prefs: SearchPreferencesRequest) =>
     api.post<BrowseUserDto[]>("/api/Matchmaking/search", prefs),
 
-  getSearchPreferences: async () => {
-    const r = await api.get<{
-      data?: SearchPreferencesDto;
-      Data?: SearchPreferencesDto;
-    }>("/api/search/preferences");
-    return r?.data ?? r?.Data ?? null;
-  },
+  getSearchPreferences: () =>
+    dedupeAsync("browseApi:getSearchPreferences", async () => {
+      const r = await api.get<{
+        data?: SearchPreferencesDto;
+        Data?: SearchPreferencesDto;
+      }>("/api/search/preferences");
+      return r?.data ?? r?.Data ?? null;
+    }),
 
   updateSearchPreferences: (prefs: SearchPreferencesRequest) =>
     api.put("/api/search/preferences", prefs),
@@ -100,13 +102,14 @@ export const browseApi = {
   resetSearchPreferences: () =>
     api.post("/api/search/preferences/reset"),
 
-  getInterests: async () => {
-    const res = await api.get<{ data?: GetInterestsDto[]; Data?: GetInterestsDto[] } | GetInterestsDto[]>(
-      "/api/Interest/GetAll"
-    );
-    const arr = Array.isArray(res) ? res : (res?.data ?? res?.Data);
-    return Array.isArray(arr) ? arr : [];
-  },
+  getInterests: () =>
+    dedupeAsync("browseApi:getInterests", async () => {
+      const res = await api.get<{ data?: GetInterestsDto[]; Data?: GetInterestsDto[] } | GetInterestsDto[]>(
+        "/api/Interest/GetAll"
+      );
+      const arr = Array.isArray(res) ? res : (res?.data ?? res?.Data);
+      return Array.isArray(arr) ? arr : [];
+    }),
 
   likeProfile: (userId: string) =>
     api.post(`/api/Users/like-profile/${userId}`),
