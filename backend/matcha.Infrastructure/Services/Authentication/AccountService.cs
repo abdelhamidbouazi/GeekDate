@@ -1,4 +1,4 @@
-﻿using matcha.Application.Dtos.AccountDtos;
+using matcha.Application.Dtos.AccountDtos;
 using matcha.Application.Dtos.Users;
 using matcha.Application.Exceptions;
 using matcha.Application.Interfaces.Repositories;
@@ -177,7 +177,9 @@ namespace matcha.Infrastructure.Services.Authentication
         #region RegisterService
         public async Task<LoginDto> RegisterAsync(RegisterDto registerDto)
         {
-            await validateUserRegistration(registerDto);
+            var existingUnverifiedUser = await GetExistingUnverifiedRegistrationUser(registerDto);
+            if (existingUnverifiedUser is not null)
+                return await SendRegistrationEmail(existingUnverifiedUser, "The account already exists but is not verified. We sent a new verification email.");
 
             using HMACSHA512 hmac = new HMACSHA512();
 
@@ -193,13 +195,50 @@ namespace matcha.Infrastructure.Services.Authentication
 
             await _unitOfWork.GetRepository<IAccountRepositoryAsync>().AddAsync(user);
 
-            await SendConfirmationEmail(user.Id);
+            return await SendRegistrationEmail(user, "Account created, but the verification email could not be sent. Please try signing up again to resend it.");
+        }
+
+        private async Task<LoginDto> SendRegistrationEmail(AppUser user, string failureMessage)
+        {
+            try
+            {
+                await SendConfirmationEmail(user.Id);
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(failureMessage, ex);
+            }
 
             return new LoginDto
             {
                 Username = user.UserName,
                 Token = _jwtTokenGenerator.CreateToken(user)
             };
+        }
+
+        private async Task<AppUser> GetExistingUnverifiedRegistrationUser(RegisterDto registerDto)
+        {
+            var userByUsername = await _userRepositoryAsync.FirstOrDefaultAsync(u => u.UserName == registerDto.UserName);
+            var userByEmail = await _userRepositoryAsync.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
+
+            if (userByUsername is null && userByEmail is null)
+                return null;
+
+            if (userByUsername is not null &&
+                userByEmail is not null &&
+                userByUsername.Id == userByEmail.Id &&
+                !userByUsername.EmailConfirmed)
+            {
+                return userByUsername;
+            }
+
+            var errors = new Dictionary<string, string>();
+            if (userByUsername is not null)
+                errors.Add(nameof(registerDto.UserName), "Username already exist");
+            if (userByEmail is not null)
+                errors.Add(nameof(registerDto.Email), "Email already exist");
+
+            throw new ValidationException("Validation errors occured.", errors);
         }
         #endregion
 
@@ -211,23 +250,19 @@ namespace matcha.Infrastructure.Services.Authentication
             if (user is null)
                 throw new NotFoundException($"User with the given id {userId} was not found.");
 
-            // Already verified — idempotent, no error
-            if (user.EmailConfirmed)
-                return;
-
             var confirmEmailToken = await _unitOfWork.GetRepository<IConfirmEmailTokenRepositoryAsync>()
                     .GetConfirmEmailTokenByUserId(userId);
 
             if (confirmEmailToken is null)
                 throw new NotFoundException("The user does not have any current valid token.");
 
-            if (!confirmEmailToken.Token.Equals(DecodeToken(token), StringComparison.OrdinalIgnoreCase))
-                throw new ValidationException("Invalid or expired verification token.");
-
-            user.EmailConfirmed = true;
-            await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
-            await _unitOfWork.GetRepository<IConfirmEmailTokenRepositoryAsync>()
-                    .UpdateAllTokensByUserId(userId);
+            if (confirmEmailToken.Token.Equals(DecodeToken(token), StringComparison.OrdinalIgnoreCase))
+            {
+                user.EmailConfirmed = true;
+                await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
+                await _unitOfWork.GetRepository<IConfirmEmailTokenRepositoryAsync>()
+                        .UpdateAllTokensByUserId(userId);
+            }
         }
 
         public async Task SendConfirmationEmail(Guid userId)
@@ -397,8 +432,8 @@ namespace matcha.Infrastructure.Services.Authentication
             return new TokenValidationResult
             {
                 IsValid = true,
-                EmailVerified = userEntity.EmailConfirmed,
-                ProfileCompleted = userEntity.IsProfileCompleted,
+                EmailVerified = claims.EmailVerified,
+                ProfileCompleted = claims.ProfileCompleted,
                 Message = "Token is valid and user meets the required conditions."
             };
         }
@@ -463,9 +498,9 @@ namespace matcha.Infrastructure.Services.Authentication
         {
             var code = EncodeToken(token);
 
-            // origin already contains the full URL (e.g. http://localhost:3000/account/confirm-email)
-            // so just add query params directly — no need to append endPoint again
-            var verificationUri = QueryHelpers.AddQueryString(origin, "userId", userId.ToString());
+            var _endpointUri = new Uri(new Uri(origin.TrimEnd('/')), endPoint.TrimStart('/'));
+
+            var verificationUri = QueryHelpers.AddQueryString(_endpointUri.ToString(), "userId", userId.ToString());
             verificationUri = QueryHelpers.AddQueryString(verificationUri, "code", code);
 
             return verificationUri;

@@ -5,6 +5,6 @@
         None,
         Male,
         Female,
-        Unknonw
+        Unknown
     }
 }

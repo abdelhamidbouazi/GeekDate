@@ -1,11 +1,6 @@
 "use client"
 
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -13,17 +8,7 @@ import { Settings, Bell, Shield, User, Globe } from "lucide-react"
 
 export default function SettingsPage() {
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
+    <AuthenticatedShell>
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -110,7 +95,7 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <Label>Show Online Status</Label>
-                          <p className="text-sm text-muted-foreground">Let others see when you're online</p>
+                          <p className="text-sm text-muted-foreground">Let others see when you&apos;re online</p>
                         </div>
                         <input type="checkbox" defaultChecked className="size-4" />
                       </div>
@@ -168,7 +153,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+    </AuthenticatedShell>
   )
 }

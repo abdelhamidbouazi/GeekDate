@@ -26,14 +26,6 @@ export function Carousel({
     setCurrentIndex((prev) => (prev + 1) % totalItems)
   }, [totalItems])
 
-  const goToPrevious = React.useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + totalItems) % totalItems)
-  }, [totalItems])
-
-  const goToSlide = React.useCallback((index: number) => {
-    setCurrentIndex(index)
-  }, [])
-
   React.useEffect(() => {
     if (!autoPlay || totalItems <= 1) return
 

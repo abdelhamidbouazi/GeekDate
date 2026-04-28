@@ -2,7 +2,7 @@
 {
     public enum RelationshipGoals
     {
-        Unknonw,
+        Unknown,
         Friendship,
         Dating,
         LongTermRelationship,

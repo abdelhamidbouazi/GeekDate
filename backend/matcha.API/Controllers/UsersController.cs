@@ -10,7 +10,7 @@ namespace matcha.API.Controllers
 
 
     [Authorize]
-    public class UsersController(IUserServiceAsync userServiceAsync, IAuthenticatedUser authenticatedUser, IUserProfileService userProfileService) : BaseApiController
+    public class UsersController(IUserServiceAsync userServiceAsync, IAuthenticatedUser authenticatedUser) : BaseApiController
     {
         [HttpGet]
         public async Task<ActionResult> GetUsers()
@@ -124,7 +124,7 @@ namespace matcha.API.Controllers
         [HttpGet("profile-views")]
         public async Task<ActionResult> GetProfileViews()
         {
-            var result = await userProfileService.GetWhoViewedMeAsync(authenticatedUser.UserId);
+            var result = await userServiceAsync.GetWhoViewedMeAsync(authenticatedUser.UserId);
             return Ok(result);
         }
 
@@ -155,7 +155,8 @@ namespace matcha.API.Controllers
         [HttpGet("profile-likes")]
         public async Task<ActionResult> GetProfileLikes()
         {
-            var result = await userProfileService.GetWhoLikedMeAsync(authenticatedUser.UserId);
+            var result = await userServiceAsync.GetWhoLikedMeAsync(authenticatedUser.UserId);
+
             return Ok(result);
         }
     }

@@ -1,35 +1,25 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
-import { UserCard } from "@/components/user-card"
+import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
+import { UserCard } from "@/components/shared/user-card"
 import { Heart, Loader2 } from "lucide-react"
-import { profileApi } from "@/lib/profile-api"
+import {
+  profileApi,
+  profileViewerDisplayName,
+  resolveProfileMediaUrl,
+  type ProfileViewerUser,
+} from "@/lib/services/profile-api"
 
-const PLACEHOLDER_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Crect fill='%23999' width='400' height='600'/%3E%3Ctext fill='%23fff' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24'%3ENo photo%3C/text%3E%3C/svg%3E"
-
-function mapProfileLikeToCard(p: {
-  userName: string;
-  pictureUrl: string | null;
-  firstName?: string;
-  lastName?: string;
-  age?: number;
-}) {
-  const name =
-    [p.firstName, p.lastName].filter(Boolean).join(" ") || p.userName || "User"
+function mapProfileLikeToCard(p: ProfileViewerUser) {
+  const name = profileViewerDisplayName(p)
   return {
-    id: p.userName,
+    id: p.id,
     name,
-    age: p.age ?? 0,
+    age: p.age && p.age > 0 ? p.age : 0,
     role: "Member",
     location: "Match",
-    image: p.pictureUrl ?? PLACEHOLDER_IMAGE,
+    image: resolveProfileMediaUrl(p.profilePicture),
     tags: [],
     bio: "",
     match: 100,
@@ -73,31 +63,21 @@ export default function MatchesPage() {
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
+    <AuthenticatedShell>
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="px-4 lg:px-6">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="rounded-full bg-pink-500/10 p-3">
-                    <Heart className="size-6 text-pink-500 fill-pink-500" />
+                <div className="mb-6 flex items-center gap-3 rounded-[2rem] border border-primary/10 bg-linear-to-br from-card via-card to-primary/8 p-6 shadow-xl shadow-rose-950/5">
+                  <div className="rounded-full bg-linear-to-br from-rose-500 to-orange-400 p-3 text-white shadow-lg shadow-rose-500/25">
+                    <Heart className="size-6 fill-current" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-3xl font-black tracking-tight">
                       Your Matches
                     </h1>
                     <p className="text-muted-foreground">
-                      People who liked you. Start a conversation!
+                      People who liked you back. Start the conversation while the spark is fresh.
                     </p>
                   </div>
                 </div>
@@ -145,7 +125,6 @@ export default function MatchesPage() {
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+    </AuthenticatedShell>
   )
 }

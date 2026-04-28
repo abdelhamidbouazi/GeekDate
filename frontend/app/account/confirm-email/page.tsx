@@ -1,11 +1,11 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { authApi } from "@/lib/auth"
 
 function ConfirmEmailContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
 
@@ -20,24 +20,12 @@ function ConfirmEmailContent() {
       try {
         await authApi.confirmEmail(userId, code)
         setStatus("success")
-        sessionStorage.setItem("emailJustVerified", "1")
-        try {
-          const res = await authApi.validateToken() as { emailVerified?: boolean; profileCompleted?: boolean }
-          if (res?.emailVerified && res?.profileCompleted) {
-            sessionStorage.removeItem("emailJustVerified")
-            router.replace("/browse")
-            return
-          }
-        } catch {
-          // No token or invalid - go to verify for profile completion
-        }
-        router.replace("/verify")
       } catch {
         setStatus("error")
       }
     }
     confirm()
-  }, [searchParams, router])
+  }, [searchParams])
 
   return (
     <div className="bg-muted flex min-h-svh items-center justify-center p-6">
@@ -45,10 +33,20 @@ function ConfirmEmailContent() {
         <p className="text-muted-foreground">Verifying your email...</p>
       )}
       {status === "success" && (
-        <p className="text-muted-foreground">Email verified. Redirecting...</p>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-muted-foreground">Email verified successfully.</p>
+          <Link href="/login" className="text-primary underline underline-offset-4">
+            Go to login
+          </Link>
+        </div>
       )}
       {status === "error" && (
-        <p className="text-destructive">Verification failed. The link may have expired.</p>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-destructive">Verification failed. The link may have expired.</p>
+          <Link href="/login" className="text-primary underline underline-offset-4">
+            Back to login
+          </Link>
+        </div>
       )}
     </div>
   )

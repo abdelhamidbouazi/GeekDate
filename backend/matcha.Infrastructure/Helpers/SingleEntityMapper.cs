@@ -23,6 +23,9 @@ namespace matcha.Infrastructure.Helpers
                         var propertyInfo = instance.GetType().GetProperty(prop.Name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
                         if (propertyInfo != null && propertyInfo.CanWrite)
                         {
+                            var targetType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+                            if (targetType.IsEnum)
+                                value = Enum.ToObject(targetType, value);
                             propertyInfo.SetValue(instance, value);
                         }
                         isAllFieldsNullable = false;
@@ -81,6 +84,9 @@ namespace matcha.Infrastructure.Helpers
                         var propertyInfo = instance.GetType().GetProperty(prop.Name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
                         if (propertyInfo != null && propertyInfo.CanWrite)
                         {
+                            var targetType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+                            if (targetType.IsEnum)
+                                value = Enum.ToObject(targetType, value);
                             propertyInfo.SetValue(instance, value);
                         }
                         isAllFieldsNullable = false;

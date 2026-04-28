@@ -1,12 +1,13 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useState } from "react"
+import { Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight, MapPin, Upload } from "lucide-react"
 import { authApi } from "@/lib/auth"
-import { api } from "@/lib/api"
-import { browseApi } from "@/lib/browse-api"
-import { profileApi } from "@/lib/profile-api"
+import { api } from "@/lib/services/api"
+import { browseApi, type GetInterestsDto } from "@/lib/services/browse-api"
+import { InterestsField } from "./interests-field"
+import { profileApi } from "@/lib/services/profile-api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,8 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-
 type Step = "loading" | "verify-email" | "basic-profile" | "preferences" | "location"
 
 const GENDER_OPTIONS = [
@@ -45,12 +44,6 @@ const PREFERRED_GENDER_OPTIONS = [
   { value: "2", label: "Female" },
   { value: "3", label: "Unknown" },
 ]
-
-interface InterestItem {
-  id?: string
-  Id?: string
-  name?: string
-}
 
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -70,7 +63,7 @@ function VerifyContent() {
   const [preferredGender, setPreferredGender] = useState("0")
   const [biography, setBiography] = useState("")
   const [selectedInterestIds, setSelectedInterestIds] = useState<string[]>([])
-  const [interests, setInterests] = useState<InterestItem[]>([])
+  const [interests, setInterests] = useState<GetInterestsDto[]>([])
   const [interestsLoading, setInterestsLoading] = useState(false)
 
   const [profileLoading, setProfileLoading] = useState(false)
@@ -79,21 +72,19 @@ function VerifyContent() {
   const [locationMode, setLocationMode] = useState<"choose" | "browser" | "manual">("choose")
   const [manualCity, setManualCity] = useState("")
   const [manualCountry, setManualCountry] = useState("")
+  const preferencesInterestsLoadStarted = useRef(false)
 
   const fetchInterests = useCallback(async () => {
     setInterestsLoading(true)
     setError("")
     try {
       const list = await browseApi.getInterests()
-      const mapped = list
-        .map((i, idx) => ({
-          id: i.id ?? i.Id ?? (i as { Id?: string }).Id,
-          Id: i.Id ?? i.id ?? (i as { Id?: string }).Id,
-          name: i.name ?? i.Name ?? (i as { Name?: string }).Name ?? `Interest ${idx}`,
-        }))
-        .filter((i) => i.id || i.Id)
-      setInterests(mapped)
-      if (mapped.length === 0 && list.length > 0) {
+      setInterests(list)
+      const anyValidId = list.some((i) => {
+        const id = i.id ?? i.Id
+        return id && GUID_REGEX.test(String(id))
+      })
+      if (list.length > 0 && !anyValidId) {
         setError("Interests loaded but missing IDs. Please refresh or contact support.")
       }
     } catch (err) {
@@ -167,11 +158,15 @@ function VerifyContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchInterests is stable, init only needs router/searchParams
   }, [router, searchParams])
 
-  // Fetch interests when entering preferences step (in case they weren't loaded yet)
   useEffect(() => {
-    if (step === "preferences" && interests.length === 0) {
-      fetchInterests()
+    if (step !== "preferences") {
+      preferencesInterestsLoadStarted.current = false
+      return
     }
+    if (preferencesInterestsLoadStarted.current) return
+    if (interests.length > 0) return
+    preferencesInterestsLoadStarted.current = true
+    void fetchInterests()
   }, [step, interests.length, fetchInterests])
 
   async function handleIveVerified() {
@@ -574,46 +569,23 @@ function VerifyContent() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field>
-                  <FieldLabel>Interests (select at least 1)</FieldLabel>
-                  <div className="border-input rounded-md border p-3">
-                    {interestsLoading ? (
-                      <p className="text-muted-foreground text-sm">Loading interests...</p>
-                    ) : interests.length === 0 ? (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-muted-foreground text-sm">No interests available.</p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fetchInterests()}
-                        >
-                          Retry
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap gap-3">
-                        {interests.map((item) => {
-                          const id = String(item.id ?? item.Id ?? "")
-                          const name = item.name ?? (item as { Name?: string }).Name ?? id
-                          if (!id || !GUID_REGEX.test(id)) return null
-                          return (
-                            <label
-                              key={id}
-                              className="border-input flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-muted/50 has-checked:border-primary has-checked:bg-primary/5"
-                            >
-                              <Checkbox
-                                checked={selectedInterestIds.includes(id)}
-                                onCheckedChange={() => toggleInterest(id)}
-                              />
-                              <span>{name}</span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </Field>
+                <InterestsField
+                  interests={interests}
+                  loading={interestsLoading}
+                  selectedIds={selectedInterestIds}
+                  onToggle={toggleInterest}
+                  onInterestCreated={(item) => {
+                    setInterests((prev) =>
+                      [...prev, { id: item.id, name: item.name }].sort((a, b) => {
+                        const an = a.name ?? a.Name ?? ""
+                        const bn = b.name ?? b.Name ?? ""
+                        return an.localeCompare(bn, undefined, { sensitivity: "base" })
+                      })
+                    )
+                    setSelectedInterestIds((ids) => (ids.includes(item.id) ? ids : [...ids, item.id]))
+                  }}
+                  onRequestError={(msg) => setError(msg)}
+                />
                 <div className="flex gap-2">
                   <Button
                     type="button"

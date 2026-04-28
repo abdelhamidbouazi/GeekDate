@@ -10,10 +10,10 @@ namespace matcha.Domain.Entities
         public string Email { get; set; }
         public byte[] PasswordHash { get; set; }
         public byte[] PasswordSalt { get; set; }
-        public Gender Gender { get; set; } = Gender.Unknonw;
+        public Gender Gender { get; set; } = Gender.Unknown;
         public DateTime? DateOfBirth { get; set; }
         public string Biography { get; set; }
-        public RelationshipGoals LookingFor { get; set; } = RelationshipGoals.Unknonw;
+        public RelationshipGoals LookingFor { get; set; } = RelationshipGoals.Unknown;
         public SexualPreferences PreferredGender { get; set; } = SexualPreferences.None;
         public ICollection<UserInterest> Interests { get; set; }
         public string City { get; set; }

@@ -378,44 +378,59 @@ namespace matcha.DomainServices.Services.UserService
             // Notify both users of the match
             await _notificationService.SendNotificationAsync(targetUserId, currentUserId, NotificationType.Match);
             await _notificationService.SendNotificationAsync(currentUserId, targetUserId, NotificationType.Match);
+            //if ((like.LikerUserId == targetUserId && like.LikedUserId == currentUserId)
+            //   || (like.LikerUserId == currentUserId && like.LikedUserId == targetUserId))
+            //{
+            //    if (!like.IsMatched)
+            //    {
+            //        like.IsMatched = true;
+            //        like.MatchedAt = DateTime.UtcNow;
+
+            //        var user = await GetUserByIdAsync(targetUserId);
+            //        user.FameRating += FameRatingConstants.MatchRating;
+            //        await repo.Update(like);
+            //        await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(user);
+
+            //        // Create Match entity
+            //        var matchRepo = _unitOfWork.GetRepository<IMatchRepositoryAsync>();
+            //        await matchRepo.AddAsync(new Match
+            //        {
+            //            User1Id = currentUserId,
+            //            User2Id = targetUserId,
+            //            MatchedAt = DateTime.UtcNow
+            //        });
+
+            //        // Notifications / conversation / SignalR here
+            //    }
+            //}
         }
 
 
-        public async Task<bool> BlockUserAsync(Guid userToBlock)
+        public async Task<bool> BlockUserAsync(Guid userIdToLike)
         {
             try
             {
                 await _unitOfWork.CreateTransaction();
 
                 var userLike = await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>()
-                    .FirstOrDefaultAsync(x => (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userToBlock) || (x.LikerUserId == userToBlock && x.LikedUserId == _authenticatedUser.UserId));
+                    .FirstOrDefaultAsync(x => (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userIdToLike) || (x.LikerUserId == userIdToLike && x.LikedUserId == _authenticatedUser.UserId));
                 if (userLike is not null)
                     await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>().Delete(userLike);
 
                 var profileViews = await _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>()
-                    .GetAllAsync(x => (x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == userToBlock) || (x.TargetUserId == _authenticatedUser.UserId && x.FromUserId == userToBlock));
+                    .GetAllAsync(x => (x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == userIdToLike) || (x.TargetUserId == _authenticatedUser.UserId && x.FromUserId == userIdToLike));
                 if (profileViews.Any())
                     await _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>().DeleteRange(profileViews);
-
-                await RemoveMatchAsync(_authenticatedUser.UserId, userToBlock);
 
                 var block = new UserBlock
                 {
                     Id = Guid.NewGuid(),
                     BlockingUserId = _authenticatedUser.UserId,
-                    BlockedUserId = userToBlock,
+                    BlockedUserId = userIdToLike,
                 };
 
                 await _unitOfWork.GetRepository<IGenericRepoAsync<UserBlock>>().AddAsync(block);
-
                 await _unitOfWork.CommitTransaction();
-
-                var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>()
-                                .FirstOrDefaultAsync(x => (x.User1Id == _authenticatedUser.UserId && x.User2Id == userToBlock)
-                                   || (x.User2Id == _authenticatedUser.UserId && x.User1Id == userToBlock));
-
-                await _notificationService.SendUserBlockedToConversationAsync(conversation.Id);
-
                 return true;
             }
             catch (Exception ex)

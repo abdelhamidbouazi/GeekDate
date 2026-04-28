@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using matcha.Application.Dtos.Users;
 using matcha.Application.Interfaces.Repositories;
 using matcha.Application.Interfaces.Services;
@@ -39,9 +39,6 @@ namespace matcha.DomainServices.Services.UserService
         {
             var userAge = CalculateUserAge(currentUser);
 
-            // When user has no location, SQL uses 999999999 for distance; we must allow it to pass
-            var hasLocation = (currentUser.Latitude != 0 || currentUser.Longitude != 0);
-
             // Search levels with increasing distance
             var searchLevels = new[]
             {
@@ -57,14 +54,13 @@ namespace matcha.DomainServices.Services.UserService
 
             foreach (var level in searchLevels)
             {
-                var maxDist = hasLocation ? level.Distance : 999_999_999.0; // bypass distance filter when no location
                 var spec = new BrowseUsersSpecification
                 {
                     ExcludeUserId = currentUser.Id,
                     PreferredGenders = DeterminePreferredGenders(currentUser),
                     UserLatitude = currentUser.Latitude,
                     UserLongitude = currentUser.Longitude,
-                    MaxDistanceMeters = maxDist,
+                    MaxDistanceMeters = level.Distance,
 
                     UserInterestIds = level.UseInterests
                         ? currentUser.Interests?.Select(i => i.InterestId).ToList() ?? new List<Guid>()
@@ -96,7 +92,7 @@ namespace matcha.DomainServices.Services.UserService
         private List<Gender> DeterminePreferredGenders(AppUser user)
         {
             if (user.PreferredGender == SexualPreferences.None ||
-                user.PreferredGender == SexualPreferences.Unknonw)
+                user.PreferredGender == SexualPreferences.Unknown)
             {
                 return new List<Gender> { Gender.Male, Gender.Female };
             }
@@ -105,7 +101,7 @@ namespace matcha.DomainServices.Services.UserService
             {
                 SexualPreferences.Male => new List<Gender> { Gender.Male },
                 SexualPreferences.Female => new List<Gender> { Gender.Female },
-                SexualPreferences.Unknonw => new List<Gender> { Gender.Male, Gender.Female },
+                SexualPreferences.Unknown => new List<Gender> { Gender.Male, Gender.Female },
                 _ => new List<Gender> { Gender.Male, Gender.Female }
             };
         }

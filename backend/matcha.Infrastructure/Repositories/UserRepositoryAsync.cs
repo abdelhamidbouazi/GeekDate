@@ -141,7 +141,6 @@ namespace matcha.Infrastructure.Repositories
 
         public async Task<IEnumerable<AppUser>> GetProfileViewersAsync(Guid id)
         {
-            _builder.ClearAll();
             var query = _builder
                 .InnerJoin<AppUser, ProfileView>(nameof(AppUser.Id), nameof(ProfileView.FromUserId))
                 .LeftJoin<AppUser, Photo>(nameof(AppUser.Id), nameof(Photo.UserId), true)
@@ -155,11 +154,10 @@ namespace matcha.Infrastructure.Repositories
 
         public async Task<IEnumerable<AppUser>> GetprofileLikesAsync(Guid userId)
         {
-            _builder.ClearAll();
             var query = _builder
              .InnerJoin<AppUser, UserLike>(nameof(AppUser.Id), nameof(UserLike.LikerUserId))
              .LeftJoin<AppUser, Photo>(nameof(AppUser.Id), nameof(Photo.UserId), true)
-             .Where(new Condition($"{nameof(UserLike)}s.{nameof(UserLike.LikedUserId)}=@id AND {nameof(UserLike)}s.{nameof(UserLike.IsMatched)}=0", new SqlParameter("@id", userId)))
+             .Where(new Condition($"{nameof(UserLike)}s.{nameof(UserLike.LikedUserId)}=@id", new SqlParameter("@id", userId)))
              .SelectAll()
              .Build();
 

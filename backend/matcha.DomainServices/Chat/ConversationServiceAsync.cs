@@ -42,6 +42,9 @@ namespace matcha.DomainServices.Chat
 
             var conversation = await conversationRepository.GetConversationBetweenUsersAsync(authenticatedUser.Id, userId);
 
+            if (conversation is not null)
+                throw new ApiException("A conversation with this user already exists.");
+
             var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(authenticatedUser.Id, userId);
 
             if (!isMatched)

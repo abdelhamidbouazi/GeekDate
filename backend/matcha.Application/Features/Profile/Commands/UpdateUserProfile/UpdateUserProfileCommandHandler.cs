@@ -32,7 +32,7 @@ namespace matcha.Application.Features.Profile.Commands.UpdateUserProfile
             if (!request.UserInterestIds.Any())
                 errors.Add(nameof(request.UserInterestIds), "At least you need to choose 1 interest");
 
-            if (request.Gender == Domain.Common.Enums.Gender.Unknonw)
+            if (request.Gender == Domain.Common.Enums.Gender.Unknown)
                 errors.Add(nameof(request.Gender), "Your gender must be specified");
 
             if (string.IsNullOrEmpty(request.FirstName))

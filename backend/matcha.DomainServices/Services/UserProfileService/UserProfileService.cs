@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using matcha.Application.Dtos.Profile;
 using matcha.Application.Dtos.UserBlocks;
 using matcha.Application.Dtos.UserLikes;
@@ -26,10 +26,9 @@ namespace matcha.DomainServices.Services.UserService
         private readonly IUserServiceAsync _userServiceAsync;
         private readonly IConfiguration _configuration;
         private readonly IAuthenticatedUser _authenticatedUser;
-        private readonly IGeocodingService _geocodingService;
 
         public UserProfileService(IUnitOfWork unitOfWork, IMapper mapper, IEmailService mailService, IUserServiceAsync userServiceAsync, IConfiguration configuration,
-            IAuthenticatedUser authenticatedUser, IGeocodingService geocodingService)
+            IAuthenticatedUser authenticatedUser)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -37,21 +36,6 @@ namespace matcha.DomainServices.Services.UserService
             _userServiceAsync = userServiceAsync;
             _configuration = configuration;
             _authenticatedUser = authenticatedUser;
-            _geocodingService = geocodingService;
-        }
-
-        private static string SanitizeExceptionMessage(Exception ex, string prefix)
-        {
-            var msg = ex.InnerException?.Message ?? ex.Message;
-            var isDbError = msg.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase)
-                || msg.Contains("Invalid column name", StringComparison.OrdinalIgnoreCase)
-                || msg.Contains("Cannot insert", StringComparison.OrdinalIgnoreCase)
-                || msg.Contains("foreign key", StringComparison.OrdinalIgnoreCase)
-                || ex.GetType().Name.Contains("Db", StringComparison.OrdinalIgnoreCase)
-                || ex.GetType().Name.Contains("Sql", StringComparison.OrdinalIgnoreCase);
-            return isDbError
-                ? $"{prefix}. Please try again or contact support if the problem persists."
-                : $"{prefix}: {msg}";
         }
 
         private async Task<AppUser> GetUserAsync(Guid userId)
@@ -178,7 +162,7 @@ namespace matcha.DomainServices.Services.UserService
             catch (Exception ex)
             {
                 await _unitOfWork.RollBackTransaction();
-                throw new ApiException(SanitizeExceptionMessage(ex, "Failed to complete user profile"));
+                throw new ApiException($"Failed to complete user profile: {ex.Message}");
             }
         }
 
@@ -312,7 +296,7 @@ namespace matcha.DomainServices.Services.UserService
                     }
                 }
 
-                throw new ApiException(SanitizeExceptionMessage(ex, "Failed to complete user profile"));
+                throw new ApiException($"Failed to complete user profile: {ex.Message}");
             }
         }
         public async Task<bool> DeleteUser(Guid id)
@@ -367,22 +351,7 @@ namespace matcha.DomainServices.Services.UserService
                 userProfile.Gender = profileCommand.Gender;
                 userProfile.Biography = profileCommand.Biography;
                 userProfile.PreferredGender = profileCommand.SexualPreferences;
-                var previousCity = userProfile.City;
                 userProfile.City = profileCommand.City;
-
-                // If city changed, attempt to geocode to keep coordinates consistent for distance-based features.
-                if (!string.IsNullOrWhiteSpace(userProfile.City) &&
-                    !string.Equals(previousCity?.Trim(), userProfile.City.Trim(), StringComparison.OrdinalIgnoreCase))
-                {
-                    var country = string.IsNullOrWhiteSpace(userProfile.Country) ? null : userProfile.Country.Trim();
-                    var query = country is null ? userProfile.City : $"{userProfile.City}, {country}";
-                    var coords = await _geocodingService.GeocodeAsync(query);
-                    if (coords.HasValue)
-                    {
-                        userProfile.Latitude = coords.Value.Latitude;
-                        userProfile.Longitude = coords.Value.Longitude;
-                    }
-                }
 
                 await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(userProfile);
 

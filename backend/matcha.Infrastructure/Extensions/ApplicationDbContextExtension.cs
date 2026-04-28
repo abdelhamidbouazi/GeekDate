@@ -1,9 +1,10 @@
-using matcha.Application.Interfaces.Repositories;
+﻿using matcha.Application.Interfaces.Repositories;
 using matcha.Application.Interfaces.Services.Database;
 using matcha.Infrastructure.ApplicationDbContext;
 using matcha.Infrastructure.Database;
 using matcha.Infrastructure.Repositories;
 using matcha.Infrastructure.ReposUsingCustomQueryBuilder;
+using matcha.Infrastructure.Seeding;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -39,6 +40,7 @@ namespace matcha.Infrastructure.Extensions
             services.AddTransient(typeof(IQueryBuilder<>), typeof(QueryBuilder<>));
             services.AddScoped<IDatabaseService, DatabaseService>();
             services.AddScoped(typeof(IGenericRepoAsync<>), typeof(GenericRepoAsync<>));
+            services.AddScoped<Seed>();
 
             return services;
         }

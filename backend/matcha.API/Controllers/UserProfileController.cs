@@ -1,6 +1,5 @@
-using matcha.Application.Dtos.Users;
+﻿using matcha.Application.Dtos.Users;
 using matcha.Application.Features.Profile.Commands.CompleteUserPreferences;
-using matcha.Application.Features.Profile.Commands.SetUserLocation;
 using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
 using matcha.Application.Features.Profile.Queries.GetConnectedProfile;
 using matcha.Application.Features.Users.Commands.CompleteUserProfile;
@@ -44,13 +43,8 @@ namespace matcha.API.Controllers
         [HttpPut("update-profile")]
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserProfileCommand command)
         {
-            return Ok(await _mediator.Send(command));
-        }
-
-        [Authorize]
-        [HttpPost("set-location")]
-        public async Task<ActionResult> SetLocation([FromBody] SetUserLocationCommand command)
-        {
+            System.IO.File.AppendAllText("C:\\temp\\update-profile-log.txt",
+                $"[{DateTime.Now}] Gender={command.Gender} ({(int)command.Gender}), SexualPrefs={command.SexualPreferences} ({(int)command.SexualPreferences}), FirstName={command.FirstName}, City={command.City}\n");
             return Ok(await _mediator.Send(command));
         }
     }

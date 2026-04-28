@@ -12,11 +12,5 @@ namespace matcha.Domain.Entities
 
         [NotMapped]
         public int UnreadCount { get; set; }
-
-        [NotMapped]
-        public string? LastMessageText { get; set; }
-
-        [NotMapped]
-        public DateTime? LastMessageAt { get; set; }
     }
 }

@@ -10,6 +10,5 @@ namespace matcha.Application.Interfaces.Services
         Task SendMessageDeletedToConversationAsync(Guid conversationId, Guid messageId);
         Task SendNotificationToUserAsync(Guid userId, RealtimeNotificationDto realtimeNotificationDto);
         Task SendNotificationAsync(Guid toUserId, Guid fromUserId, NotificationType type, string message = "", Guid? conversationId = null);
-        Task SendUserBlockedToConversationAsync(Guid conversationId);
     }
 }

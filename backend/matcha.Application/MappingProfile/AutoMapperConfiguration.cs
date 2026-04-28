@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using matcha.Application.Dtos.InterestDtos;
 using matcha.Application.Dtos.Profile;
 using matcha.Application.Dtos.UserInterestsDtos;
@@ -14,9 +14,7 @@ namespace matcha.Application.MappingProfile
         {
             #region Interests
 
-            CreateMap<Interest, GetInterestsDto>()
-                .ForMember(d => d.Users, opt => opt.Ignore())
-                .ReverseMap();
+            CreateMap<Interest, GetInterestsDto>().ReverseMap();
             CreateMap<Interest, GetInterestDto>().ReverseMap();
             CreateMap<Interest, CreateInterestDto>().ReverseMap();
             CreateMap<Interest, InterestDto>()

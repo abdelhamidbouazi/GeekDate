@@ -87,6 +87,7 @@ namespace matcha.Infrastructure.Hubs
                     });
             }
         }
+
         public async Task UserStoppedTyping(Guid conversationId)
         {
             var userId = GetCurrentUserId();

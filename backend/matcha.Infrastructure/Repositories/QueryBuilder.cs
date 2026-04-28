@@ -194,7 +194,10 @@ namespace matcha.Infrastructure.Repositories
             var paramsList = new List<string>();
             foreach (var prop in properties)
             {
-                _parameters.Add(new SqlParameter($"@{prop.Name}", prop.GetValue(entity) ?? DBNull.Value));
+                var value = prop.GetValue(entity);
+                if (value != null && value.GetType().IsEnum)
+                    value = (int)value;
+                _parameters.Add(new SqlParameter($"@{prop.Name}", value ?? DBNull.Value));
                 paramsList.Add($"@{prop.Name}");
             }
 
@@ -275,7 +278,10 @@ namespace matcha.Infrastructure.Repositories
                 if (prop.Name.ToLower() != "id")
                 {
                     _query += $"{prop.Name} = @{prop.Name},";
-                    _parameters.Add(new SqlParameter($"@{prop.Name}", prop.GetValue(entity) ?? DBNull.Value));
+                    var value = prop.GetValue(entity);
+                    if (value != null && value.GetType().IsEnum)
+                        value = (int)value;
+                    _parameters.Add(new SqlParameter($"@{prop.Name}", value ?? DBNull.Value));
                 }
             }
             _query = _query.Substring(0, _query.Length - 1);

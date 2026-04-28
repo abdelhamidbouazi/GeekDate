@@ -1,21 +1,39 @@
-FROM node:20-alpine
+# syntax=docker/dockerfile:1
 
+FROM node:22-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY . .
+FROM node:22-alpine AS build
+WORKDIR /app
 
-# API URL for client-side requests (browser will use localhost:8080)
 ARG NEXT_PUBLIC_API_URL=http://localhost:8080
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_TELEMETRY_DISABLED=1
 
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN npm run build
 
-EXPOSE 3000
+FROM node:22-alpine AS runner
+WORKDIR /app
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+COPY package.json package-lock.json ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/next.config.ts ./next.config.ts
+
+USER node
+EXPOSE 3000
 
 CMD ["npm", "start"]

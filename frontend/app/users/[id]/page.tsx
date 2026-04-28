@@ -2,12 +2,7 @@
 
 import { use, useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,40 +22,14 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { profileApi, getUserIdFromToken, type AppUser } from "@/lib/profile-api"
-import { browseApi } from "@/lib/browse-api"
-import { chatApi } from "@/lib/chat-api"
-
-const PLACEHOLDER_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23999' width='400' height='400'/%3E%3Ctext fill='%23fff' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24'%3ENo photo%3C/text%3E%3C/svg%3E"
-
-function calculateAge(dateOfBirth: string | null): number | null {
-  if (!dateOfBirth) return null
-  try {
-    const dob = new Date(dateOfBirth)
-    const today = new Date()
-    let age = today.getFullYear() - dob.getFullYear()
-    if (
-      today.getMonth() < dob.getMonth() ||
-      (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-    ) {
-      age--
-    }
-    return age
-  } catch {
-    return null
-  }
-}
-
-function formatDate(dateStr: string | null) {
-  if (!dateStr) return ""
-  try {
-    const d = new Date(dateStr)
-    return `Joined ${d.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`
-  } catch {
-    return ""
-  }
-}
+import { profileApi, getUserIdFromToken, type AppUser } from "@/lib/services/profile-api"
+import { browseApi } from "@/lib/services/browse-api"
+import { chatApi } from "@/lib/services/chat-api"
+import {
+  calculateAge,
+  formatJoinedDate,
+  PROFILE_PHOTO_PLACEHOLDER,
+} from "@/lib/utils/profile"
 
 export default function PublicProfilePage({
   params,
@@ -180,7 +149,8 @@ export default function PublicProfilePage({
 
   const photos = profile.photos ?? []
   const mainPhoto = photos.find((p) => p.isMain) ?? photos[0]
-  const photoUrls = photos.length > 0 ? photos.map((p) => p.url) : [PLACEHOLDER_IMAGE]
+  const photoUrls =
+    photos.length > 0 ? photos.map((p) => p.url) : [PROFILE_PHOTO_PLACEHOLDER]
   const location = [profile.city, profile.country].filter(Boolean).join(", ") || "Location not set"
   const age = calculateAge(profile.dateOfBirth)
   const displayName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.userName
@@ -188,17 +158,7 @@ export default function PublicProfilePage({
   const interestNames = interests.map((i) => i.interest?.name ?? i.interestId).filter(Boolean)
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
+    <AuthenticatedShell>
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto">
             <div className="flex flex-col">
@@ -228,7 +188,11 @@ export default function PublicProfilePage({
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-16 sm:-mt-20">
                   <Avatar className="size-32 sm:size-40 border-4 border-background ring-4 ring-background/50">
                     <AvatarImage
-                      src={mainPhoto?.url ?? profile.photoProfileUrl ?? PLACEHOLDER_IMAGE}
+                      src={
+                        mainPhoto?.url ??
+                        profile.photoProfileUrl ??
+                        PROFILE_PHOTO_PLACEHOLDER
+                      }
                       alt={displayName}
                     />
                     <AvatarFallback>
@@ -255,7 +219,7 @@ export default function PublicProfilePage({
                         {profile.createdAt && (
                           <div className="flex items-center gap-1.5">
                             <Calendar className="size-4" />
-                            <span>{formatDate(profile.createdAt)}</span>
+                            <span>{formatJoinedDate(profile.createdAt)}</span>
                           </div>
                         )}
                       </div>
@@ -365,7 +329,10 @@ export default function PublicProfilePage({
                     <div className="space-y-6">
                       <div className="relative aspect-[4/5] max-w-2xl mx-auto rounded-2xl overflow-hidden bg-muted">
                         <Image
-                          src={photoUrls[selectedPhotoIndex] ?? PLACEHOLDER_IMAGE}
+                          src={
+                            photoUrls[selectedPhotoIndex] ??
+                            PROFILE_PHOTO_PLACEHOLDER
+                          }
                           alt={`Photo ${selectedPhotoIndex + 1}`}
                           fill
                           className="object-cover"
@@ -412,7 +379,6 @@ export default function PublicProfilePage({
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+    </AuthenticatedShell>
   )
 }

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { setAuthCookie } from "@/lib/auth-cookie"
+import { setAuthCookie } from "@/lib/auth"
 
 type ImpersonateResponse = {
   userId: string

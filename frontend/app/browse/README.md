@@ -13,19 +13,18 @@ Discover profiles: desktop grid with sidebar shell, or full-screen vertical “s
 | Reset filters | `POST /api/search/preferences/reset`, then the list call. |
 | Like / dislike | `POST /api/Users/like-profile/{userId}` or `POST /api/Users/unlike-profile/{userId}`. |
 
-Shared client helpers live in [`lib/browse-api.ts`](../../lib/browse-api.ts). Idempotent metadata GETs use a short in-flight dedupe ([`lib/request-dedupe.ts`](../../lib/request-dedupe.ts)) so React Strict Mode in development does not always double those requests.
+Shared HTTP client: [`lib/services/browse-api.ts`](../../lib/services/browse-api.ts). Idempotent metadata GETs use in-flight dedupe ([`lib/utils/request-dedupe.ts`](../../lib/utils/request-dedupe.ts)).
 
-**Profile photos:** Each `profilePicture` URL rendered with `next/image` is a **separate HTTP request** to the API host (or CDN). A large result set produces many image requests even when the JSON payload is a single response.
+**Profile photos:** Each `profilePicture` URL rendered with `next/image` is a **separate HTTP request** to the API host (or CDN).
 
 ## Files
 
-| File | Role |
-|------|------|
-| [`page.tsx`](./page.tsx) | Route: state, effects, desktop vs mobile layout, when calls run (see file header comment). |
-| [`browse-helpers.ts`](./browse-helpers.ts) | Pure DTO → UI mappings; no I/O. |
-| [`tiktok-card.tsx`](./tiktok-card.tsx) | Mobile full-screen card UI. |
-
-Filter UI is [`components/filter-sidebar.tsx`](../../components/filter-sidebar.tsx).
+| Location | Role |
+|----------|------|
+| [`app/browse/page.tsx`](./page.tsx) | Route: state, effects, desktop vs mobile layout. |
+| [`features/browse/lib/browse-helpers.ts`](../../features/browse/lib/browse-helpers.ts) | Pure DTO → UI mappings; no I/O. |
+| [`features/browse/components/tiktok-card.tsx`](../../features/browse/components/tiktok-card.tsx) | Mobile full-screen card UI. |
+| [`features/browse/components/filter-sidebar.tsx`](../../features/browse/components/filter-sidebar.tsx) | Filter sheet / controls. |
 
 ## Flow (initial load)
 

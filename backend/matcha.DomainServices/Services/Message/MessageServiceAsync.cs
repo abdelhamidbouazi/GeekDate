@@ -1,4 +1,4 @@
-﻿using matcha.Application.Dtos.ChatDtos;
+﻿using matcha.Application.Dtos.Common;
 using matcha.Application.Dtos.RealtimeDtos;
 using matcha.Application.Exceptions;
 using matcha.Application.Interfaces.Repositories;
@@ -59,13 +59,14 @@ namespace matcha.DomainServices.Services.Message
             return messages;
         }
 
-        public async Task<Response<ConversationMessagesResponseDto>> GetConversationMessagesPagedAsync(
+        public async Task<Response<PaginatedResult<Domain.Entities.Message>>> GetConversationMessagesPagedAsync(
             Guid conversationId,
             int pageNumber = 1,
             int pageSize = 20)
         {
             await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
 
+            // Validation
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 20;
             if (pageSize > 100) pageSize = 100;
@@ -73,16 +74,7 @@ namespace matcha.DomainServices.Services.Message
             var paginatedResult = await _unitOfWork.GetRepository<IMessageRepositoryAsync>()
                 .GetConversationMessagesPagedAsync(conversationId, pageNumber, pageSize);
 
-            var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>().FindAsync(conversationId);
-
-            var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(conversation.User1Id, conversation.User2Id);
-
-            var responseDto = new ConversationMessagesResponseDto
-            {
-                Messages = paginatedResult,
-                IsBlocked = !isMatched
-            };
-            return new Response<ConversationMessagesResponseDto>(responseDto)
+            return new Response<PaginatedResult<Domain.Entities.Message>>(paginatedResult)
             {
                 Message = "Messages retrieved successfully.",
             };

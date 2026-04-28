@@ -9,7 +9,7 @@ namespace matcha.DomainServices.Services.UserService.Shared
         public static List<Gender> DeterminePreferredGenders(AppUser user)
         {
             if (user.PreferredGender == SexualPreferences.None ||
-                user.PreferredGender == SexualPreferences.Unknonw)
+                user.PreferredGender == SexualPreferences.Unknown)
             {
                 return new List<Gender> { Gender.Male, Gender.Female };
             }

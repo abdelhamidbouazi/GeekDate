@@ -94,11 +94,5 @@ namespace matcha.Infrastructure.Services.RealtimeNotification
                  .User(userId.ToString())
                  .SendAsync("ReceiveNotification", realtimeNotificationDto);
         }
-        public async Task SendUserBlockedToConversationAsync(Guid conversationId)
-        {
-            await _hubContext.Clients
-                .Group($"conv-{conversationId}")
-                .SendAsync("UserBlocked", new { conversationId = conversationId.ToString() });
-        }
     }
 }

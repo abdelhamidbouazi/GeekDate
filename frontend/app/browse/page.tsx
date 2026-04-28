@@ -1,46 +1,37 @@
 "use client"
 
-/**
- * Browse / discover profiles route.
- *
- * Backend calls (see Swagger UI: http://localhost:8080/swagger/index.html):
- * - Initial load: GET interests + GET search preferences in parallel, then exactly one of
- *   GET /api/Matchmaking or POST /api/Matchmaking/search (see fetchProfiles).
- * - Apply filters: PUT /api/search/preferences, then one list fetch.
- * - Reset filters: POST /api/search/preferences/reset, then one list fetch.
- * - Like / dislike: POST like-profile or unlike-profile for that user id.
- *
- * Each profile photo URL loaded by next/image is a separate HTTP request to the API host
- * (distinct from the JSON calls above).
- */
-import { useState, useRef, useEffect, useCallback, type CSSProperties } from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
-import { UserCard } from "@/components/user-card"
+import dynamic from "next/dynamic"
+import { useState, useRef, useEffect, useCallback } from "react"
+import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
+import { UserCard } from "@/components/shared/user-card"
 import {
   RightFilterSidebar,
   defaultFilters,
   type Filters,
   type Interest,
-} from "@/components/filter-sidebar"
+} from "@/features/browse/components/filter-sidebar"
 import { Button } from "@/components/ui/button"
 import { Filter } from "lucide-react"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { toast } from "sonner"
+import { profileApi } from "@/lib/services/profile-api"
 import {
   browseApi,
   filtersToSearchPreferences,
-} from "@/lib/browse-api"
+} from "@/lib/services/browse-api"
 import {
   mapBrowseUserToProfile,
   searchPreferencesToFilters,
   interestsDtoToList,
   type Profile,
-} from "./browse-helpers"
-import { TikTokCard } from "./tiktok-card"
+} from "@/features/browse/lib/browse-helpers"
+
+const MatchCelebration = dynamic(
+  () =>
+    import("@/components/shared/match-celebration").then((m) => ({
+      default: m.MatchCelebration,
+    })),
+  { ssr: false }
+)
 
 export default function BrowsePage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -49,9 +40,8 @@ export default function BrowsePage() {
   const [interests, setInterests] = useState<Interest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const isMobile = useIsMobile()
+  const [matchOpen, setMatchOpen] = useState(false)
+  const [matchPartner, setMatchPartner] = useState<{ name: string; image: string } | null>(null)
 
   const hasActiveFilters =
     filters.tagIds.length > 0 ||
@@ -73,15 +63,10 @@ export default function BrowsePage() {
       setError(null)
       try {
         const prefs = searchFilters ?? filters
-        const hasNonDefaultFilters =
-          prefs.tagIds.length > 0 ||
-          prefs.sortBy !== "recommended" ||
-          prefs.age[0] !== defaultFilters.age[0] ||
-          prefs.age[1] !== defaultFilters.age[1] ||
-          prefs.distance !== defaultFilters.distance ||
-          prefs.fameRating !== defaultFilters.fameRating
+        const useFilteredSearch =
+          prefs.tagIds.length > 0 || prefs.sortBy !== "recommended"
 
-        const dtos = hasNonDefaultFilters
+        const dtos = useFilteredSearch
           ? await browseApi.searchUsers(filtersToSearchPreferences(prefs))
           : await browseApi.browseUsers()
 
@@ -151,172 +136,34 @@ export default function BrowsePage() {
     await fetchProfiles(defaultFilters, interests)
   }, [fetchProfiles, interests])
 
-  const handleLike = useCallback((userId: string) => {
-    browseApi.likeProfile(userId).catch(() => {})
-    setProfiles((prev) => prev.filter((p) => p.id !== userId))
-  }, [])
-
-  const handleDislike = useCallback((userId: string) => {
-    browseApi.unlikeProfile(userId).catch(() => {})
-    setProfiles((prev) => prev.filter((p) => p.id !== userId))
-  }, [])
-
-  const scrollToIndex = useCallback((index: number) => {
-    const container = containerRef.current
-    if (!container) return
-
-    const cardHeight = container.clientHeight
-    container.scrollTo({
-      top: index * cardHeight,
-      behavior: "smooth",
-    })
-  }, [])
-
-  useEffect(() => {
-    if (!isMobile) return
-
-    const container = containerRef.current
-    if (!container) return
-
-    const handleScroll = () => {
-      const scrollTop = container.scrollTop
-      const cardHeight = container.clientHeight
-      const newIndex = Math.round(scrollTop / cardHeight)
-
-      setCurrentIndex((prevIndex) => {
-        if (newIndex !== prevIndex && newIndex >= 0 && newIndex < profiles.length) {
-          return newIndex
-        }
-        return prevIndex
-      })
-    }
-
-    container.addEventListener("scroll", handleScroll, { passive: true })
-    return () => container.removeEventListener("scroll", handleScroll)
-  }, [isMobile, profiles.length])
-
-  useEffect(() => {
-    if (!isMobile) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown" || e.key === "PageDown") {
-        e.preventDefault()
-        setCurrentIndex((prevIndex) => {
-          if (prevIndex < profiles.length - 1) {
-            const nextIndex = prevIndex + 1
-            scrollToIndex(nextIndex)
-            return nextIndex
-          }
-          return prevIndex
-        })
-      } else if (e.key === "ArrowUp" || e.key === "PageUp") {
-        e.preventDefault()
-        setCurrentIndex((prevIndex) => {
-          if (prevIndex > 0) {
-            const prevIdx = prevIndex - 1
-            scrollToIndex(prevIdx)
-            return prevIdx
-          }
-          return prevIndex
-        })
+  const handleLike = useCallback(async (userId: string) => {
+    const profile = profiles.find((p) => p.id === userId)
+    try {
+      await browseApi.likeProfile(userId)
+      const info = await profileApi.getUserLikeInfo(userId)
+      if (info.isMatched && profile) {
+        setMatchPartner({ name: profile.name, image: profile.image })
+        setMatchOpen(true)
       }
+      setProfiles((prev) => prev.filter((p) => p.id !== userId))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not like this profile.")
     }
+  }, [profiles])
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isMobile, scrollToIndex, profiles.length])
-
-  if (loading && profiles.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading profiles...</p>
-      </div>
-    )
-  }
-
-  if (error && profiles.length === 0) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-        <p className="text-destructive">{error}</p>
-        <Button onClick={() => fetchProfiles()}>Try again</Button>
-      </div>
-    )
-  }
-
-  if (isMobile) {
-    return (
-      <div className="relative h-screen w-full overflow-hidden bg-black pb-16">
-        <Button
-          variant="secondary"
-          size="icon"
-          className="absolute top-4 right-4 z-30 h-10 w-10 rounded-full shadow-lg"
-          onClick={() => setFiltersOpen(true)}
-          aria-label="Open filters"
-        >
-          <Filter className="size-5" />
-        </Button>
-        <RightFilterSidebar
-          open={filtersOpen}
-          onOpenChange={setFiltersOpen}
-          filters={filters}
-          onFiltersChange={setFilters}
-          onApply={handleApplyFilters}
-          onReset={handleResetFilters}
-          interests={interests}
-        />
-        {loading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
-            <p className="text-muted-foreground">Loading profiles...</p>
-          </div>
-        )}
-        <div
-          ref={containerRef}
-          className="h-full w-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
-          style={{
-            scrollBehavior: "smooth",
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          {profiles.length === 0 && !loading ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 px-6">
-              <p className="text-center text-muted-foreground">
-                {hasActiveFilters
-                  ? "No profiles match your filters. Try adjusting your search."
-                  : "No profiles to show yet. Create another account (or ask a friend) and complete their profile so you have someone to browse."}
-              </p>
-              <Button onClick={() => setFiltersOpen(true)} variant="outline">
-                <Filter className="mr-2 size-4" />
-                Adjust filters
-              </Button>
-            </div>
-          ) : (
-            profiles.map((profile, index) => (
-              <TikTokCard
-                key={profile.id}
-                profile={profile}
-                isActive={index === currentIndex}
-                onLike={handleLike}
-                onDislike={handleDislike}
-              />
-            ))
-          )}
-        </div>
-      </div>
-    )
-  }
+  const handleDislike = useCallback(async (userId: string) => {
+    try {
+      await browseApi.unlikeProfile(userId)
+      setProfiles((prev) => prev.filter((p) => p.id !== userId))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not pass on this profile.")
+    }
+  }, [])
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as CSSProperties
-      }
+    <AuthenticatedShell
+      siteHeaderProps={{ onFiltersOpen: () => setFiltersOpen(true) }}
     >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader onFiltersOpen={() => setFiltersOpen(true)} />
         <RightFilterSidebar
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
@@ -335,10 +182,13 @@ export default function BrowsePage() {
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="px-4 lg:px-6">
-                <div className="mb-6">
-                  <h1 className="text-3xl font-bold tracking-tight mb-2">Discover Profiles</h1>
+                <div className="mb-6 rounded-[2rem] border border-primary/10 bg-linear-to-br from-card via-card to-primary/8 p-6 shadow-xl shadow-rose-950/5">
+                  <div className="mb-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-primary">
+                    Discover
+                  </div>
+                  <h1 className="mb-2 text-3xl font-black tracking-tight">Find your next spark</h1>
                   <p className="text-muted-foreground">
-                    Find your perfect geek match. Browse through profiles of developers, gamers, and tech enthusiasts.
+                    Browse real profiles, spot the chemistry, and make the first move with confidence.
                   </p>
                 </div>
 
@@ -397,7 +247,15 @@ export default function BrowsePage() {
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      <MatchCelebration
+        open={matchOpen && !!matchPartner}
+        onOpenChange={(o) => {
+          setMatchOpen(o)
+          if (!o) setMatchPartner(null)
+        }}
+        name={matchPartner?.name ?? ""}
+        image={matchPartner?.image ?? ""}
+      />
+    </AuthenticatedShell>
   )
 }
