@@ -12,6 +12,7 @@ using matcha.Shared.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -30,9 +31,11 @@ namespace matcha.Infrastructure.Services.Authentication
         private readonly IUserRepositoryAsync _userRepositoryAsync;
         private readonly IRefreshTokenRepositoryAsync _refreshTokenRepo;
         private readonly IUserSearchPreferenceRepositoryAsync _userSearchPreferenceRepositoryAsync;
+        private readonly ILogger<AccountService> _logger;
 
         public AccountService(IUnitOfWork unitOfWork, IEmailService emailService, IJwtTokenGenerator jwtTokenGenerator, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, IAuthenticatedUser user,
-          IUserSearchPreferenceRepositoryAsync userSearchPreferenceRepositoryAsync)
+          IUserSearchPreferenceRepositoryAsync userSearchPreferenceRepositoryAsync,
+          ILogger<AccountService> logger)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
@@ -43,6 +46,7 @@ namespace matcha.Infrastructure.Services.Authentication
             _userRepositoryAsync = _unitOfWork.GetRepository<IUserRepositoryAsync>();
             _refreshTokenRepo = _unitOfWork.GetRepository<IRefreshTokenRepositoryAsync>();
             _userSearchPreferenceRepositoryAsync = userSearchPreferenceRepositoryAsync;
+            _logger = logger;
         }
 
         #region LoginService
@@ -206,6 +210,7 @@ namespace matcha.Infrastructure.Services.Authentication
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to send registration verification email to user {UserId}.", user.Id);
                 throw new ApiException(failureMessage, ex);
             }
 

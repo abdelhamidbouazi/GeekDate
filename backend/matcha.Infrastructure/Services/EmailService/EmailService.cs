@@ -1,5 +1,6 @@
-﻿using matcha.Application.Interfaces.Services.Email;
+using matcha.Application.Interfaces.Services.Email;
 using matcha.Infrastructure.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
@@ -9,14 +10,21 @@ namespace matcha.Infrastructure.Services.EmailService
     public class EmailService : IEmailService
     {
         private readonly EmailSettings _mailConfig;
-        private readonly AppSettings _appSettings;
-        public EmailService(IOptions<EmailSettings> mailOptions, IOptions<AppSettings> appOptions)
+        private readonly ILogger<EmailService> _logger;
+        public EmailService(IOptions<EmailSettings> mailOptions, ILogger<EmailService> logger)
         {
             _mailConfig = mailOptions.Value;
-            _appSettings = appOptions.Value;
+            _logger = logger;
         }
         public async Task SendAsync(string reciever, string subject, string body)
         {
+            _logger.LogInformation(
+                "Sending email '{Subject}' to {Receiver} through SMTP server {SmtpServer}:{Port}.",
+                subject,
+                reciever,
+                _mailConfig.SmtpServer,
+                _mailConfig.Port);
+
             using (var client = new SmtpClient(_mailConfig.SmtpServer))
             {
                 client.Port = _mailConfig.Port;

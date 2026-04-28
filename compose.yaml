@@ -39,6 +39,11 @@ services:
       ConnectionStrings__SqlDocker: "Server=sqlserver,1433;Database=matchadb;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
       AppSettings__BaseUri: http://localhost:${BACKEND_PORT:-8080}
       AppSettings__FrontUri: http://localhost:${FRONTEND_PORT:-3000}
+      SmtpSettings__SmtpServer: ${SMTP_SERVER:-smtp.gmail.com}
+      SmtpSettings__Port: ${SMTP_PORT:-587}
+      SmtpSettings__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+      SmtpSettings__Email: ${SMTP_EMAIL:?Set SMTP_EMAIL in .env}
+      SmtpSettings__Password: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in .env}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
