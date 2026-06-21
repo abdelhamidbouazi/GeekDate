@@ -1,6 +1,6 @@
 import { api } from "./api";
 
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5266").replace(
   /\/$/,
   ""
 );

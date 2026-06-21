@@ -8,6 +8,11 @@ import type { BrowseUserDto, GetInterestsDto } from "@/lib/services/browse-api"
 export const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Crect fill='%23999' width='400' height='600'/%3E%3Ctext fill='%23fff' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24'%3ENo photo%3C/text%3E%3C/svg%3E"
 
+function generateAvatarUrl(name: string): string {
+  const encoded = encodeURIComponent(name.trim() || "User")
+  return `https://ui-avatars.com/api/?name=${encoded}&size=400&background=f43f5e&color=fff&bold=true&format=svg`
+}
+
 export interface Profile {
   id: string
   name: string
@@ -38,7 +43,14 @@ export function mapBrowseUserToProfile(
   const distanceKm = Math.round(dto.distanceInMeters / 1000)
   const location =
     dto.distanceInMeters >= 0 ? `${distanceKm} km away` : "Distance unknown"
-  const match = Math.min(100, (dto.commonTagsCount ?? 0) * 25)
+  const commonTags = dto.commonTagsCount ?? 0
+  const tagScore = Math.min(40, commonTags * 10)
+  const dist = dto.distanceInMeters ?? 999999
+  const distScore = dist < 5000 ? 30 : dist < 15000 ? 22 : dist < 30000 ? 15 : dist < 50000 ? 8 : 0
+  const fame = dto.fameRating ?? 0
+  const fameScore = Math.min(20, Math.round(fame / 5))
+  const baseScore = 10
+  const match = Math.min(100, baseScore + tagScore + distScore + fameScore)
 
   return {
     id: dto.id,
@@ -46,7 +58,7 @@ export function mapBrowseUserToProfile(
     age: dto.age ?? 0,
     role: "Member",
     location,
-    image: dto.profilePicture ?? PLACEHOLDER_IMAGE,
+    image: dto.profilePicture ?? generateAvatarUrl([dto.firstName, dto.lastName].filter(Boolean).join(" ")),
     tags,
     bio: "",
     match,

@@ -300,6 +300,11 @@ namespace matcha.Infrastructure.Database
 
                     using (var reader = await command.ExecuteReaderAsync())
                     {
+                        if (await reader.ReadAsync())
+                        {
+                            totalCount = reader.GetInt32(0);
+                        }
+
                         if (await reader.NextResultAsync())
                         {
                             results = await mapFunc(reader);

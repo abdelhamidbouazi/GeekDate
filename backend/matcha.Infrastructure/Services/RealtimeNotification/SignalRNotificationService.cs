@@ -22,6 +22,10 @@ namespace matcha.Infrastructure.Services.RealtimeNotification
             await _hubContext.Clients
                  .Group($"conv-{conversationId}")
                  .SendAsync("ReceiveMessage", realtimeMessageDto);
+
+            await _hubContext.Clients
+                 .Group($"user-{realtimeMessageDto.ReceiverId}")
+                 .SendAsync("ReceiveMessage", realtimeMessageDto);
         }
 
         public async Task SendMessageUpdatedToConversationAsync(Guid conversationId, Guid messageId, string newText)

@@ -298,85 +298,41 @@ export function MyProfileDashboard() {
                 </TabsContent>
 
                 <TabsContent value="photos" className="mt-6">
-                  <div className="space-y-6">
-                    <div className="relative mx-auto aspect-[4/5] max-w-2xl overflow-hidden rounded-2xl bg-muted">
-                      <Image
-                        src={
-                          displayPhotos[selectedPhotoIndex] ??
-                          PROFILE_PHOTO_PLACEHOLDER
-                        }
-                        alt={`Photo ${selectedPhotoIndex + 1}`}
-                        fill
-                        className="object-cover"
-                        priority
-                        unoptimized={
-                          !(displayPhotos[selectedPhotoIndex] ?? "").startsWith("/")
-                        }
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between">
-                        <span className="text-sm font-medium text-white">
-                          {displayPhotos.length > 0
-                            ? `${selectedPhotoIndex + 1} / ${displayPhotos.length}`
-                            : "No photos"}
-                        </span>
-                        <div className="flex gap-2">
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleUploadPhoto}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="backdrop-blur-sm"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                          >
-                            <Camera className="mr-2 size-4" />
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-5 gap-2">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {photos.map((photo, index) => (
-                        <div key={photo.id} className="group relative">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPhotoIndex(index)}
-                            className={`relative aspect-[3/4] w-full overflow-hidden rounded-lg border-2 transition-all ${
-                              selectedPhotoIndex === index
-                                ? "border-primary ring-2 ring-primary/20"
-                                : "border-transparent opacity-60 hover:opacity-100"
-                            }`}
-                          >
-                            <Image
-                              src={photo.url}
-                              alt={`Thumbnail ${index + 1}`}
-                              fill
-                              className="object-cover"
-                              unoptimized={!photo.url.startsWith("/")}
-                            />
-                          </button>
-                          <div className="absolute right-1 bottom-1 left-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl bg-muted">
+                          <Image
+                            src={photo.url}
+                            alt={`Photo ${index + 1}`}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            unoptimized
+                          />
+                          {photo.isMain && (
+                            <div className="absolute top-2 left-2">
+                              <Badge className="bg-primary/90 text-primary-foreground text-[10px] backdrop-blur-sm">
+                                Main
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                          <div className="absolute inset-x-2 bottom-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!photo.isMain && (
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="h-7 flex-1 text-xs"
+                                className="h-7 flex-1 text-xs backdrop-blur-sm"
                                 onClick={() => handleSetMainPhoto(photo.id)}
                               >
+                                <Star className="size-3 mr-1" />
                                 Set main
                               </Button>
                             )}
                             <Button
                               size="sm"
                               variant="destructive"
-                              className="h-7 px-2 text-xs"
+                              className="h-7 px-2.5 text-xs backdrop-blur-sm"
                               onClick={() => handleDeletePhoto(photo.id)}
                             >
                               Delete
@@ -384,7 +340,23 @@ export function MyProfileDashboard() {
                           </div>
                         </div>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/30 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                      >
+                        <Camera className="size-6" />
+                        <span className="text-xs font-medium">{uploading ? "Uploading..." : "Add Photo"}</span>
+                      </button>
                     </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleUploadPhoto}
+                    />
                   </div>
                 </TabsContent>
 

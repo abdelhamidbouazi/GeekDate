@@ -1,6 +1,6 @@
 import { clearAuthCookie } from "@/lib/auth/auth-cookie"
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5266"
 
 function parseErrorMessage(text: string, status: number): string {
   if (!text?.trim())

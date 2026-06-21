@@ -114,7 +114,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   useEffect(() => {
     const uid = getUserIdFromToken()
-    if (uid) fetchBadges()
+    if (!uid) return
+    fetchBadges()
+    const interval = setInterval(fetchBadges, 15000)
+    const onFocus = () => fetchBadges()
+    document.addEventListener("visibilitychange", onFocus)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", onFocus)
+    }
   }, [fetchBadges])
 
   const data = {
@@ -164,7 +172,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarSeparator />
         <NavComingSoon items={data.navComingSoon} />
         <SidebarSeparator />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={data.navSecondary} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

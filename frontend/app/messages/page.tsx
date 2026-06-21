@@ -36,11 +36,18 @@ import {
   LogLevel,
 } from "@microsoft/signalr"
 
+function parseUtcDate(dateStr: string): Date {
+  const s = dateStr.trim()
+  if (s.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(s)) return new Date(s)
+  return new Date(s + "Z")
+}
+
 function formatTime(dateStr: string) {
   try {
-    const d = new Date(dateStr)
+    const d = parseUtcDate(dateStr)
     const now = new Date()
     const diffMs = now.getTime() - d.getTime()
+    if (diffMs < 0) return "now"
     const diffMins = Math.floor(diffMs / 60000)
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
@@ -51,6 +58,26 @@ function formatTime(dateStr: string) {
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
   } catch {
     return ""
+  }
+}
+
+function formatLastSeen(dateStr: string | null | undefined): string {
+  if (!dateStr) return "offline"
+  try {
+    const d = parseUtcDate(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    if (diffMs < 0) return "just now"
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    if (diffMins < 2) return "just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  } catch {
+    return "offline"
   }
 }
 
@@ -70,10 +97,11 @@ function sortMessagesAsc(msgs: Message[]): Message[] {
 }
 
 export default function MessagesPage() {
-  const currentUserId = getUserIdFromToken()
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({})
   const [partnerAvatars, setPartnerAvatars] = useState<Record<string, string>>({})
+  const [partnerLastActive, setPartnerLastActive] = useState<Record<string, string>>({})
   const [matchedUsers, setMatchedUsers] = useState<ProfileViewerUser[]>([])
   const [matchedLoading, setMatchedLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -84,13 +112,21 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
+  const [hasMoreMessages, setHasMoreMessages] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [sending, setSending] = useState(false)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const hubRef = useRef<HubConnection | null>(null)
   const selectedConversationIdRef = useRef<string | null>(null)
   const lastJoinedConversationIdRef = useRef<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesPanelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    setCurrentUserId(getUserIdFromToken())
+  }, [])
 
   const getOtherUserId = useCallback(
     (c: Conversation) => (currentUserId === c.user1Id ? c.user2Id : c.user1Id),
@@ -111,6 +147,7 @@ export default function MessagesPage() {
       setConversations(list)
       const names: Record<string, string> = {}
       const avatars: Record<string, string> = {}
+      const lastActiveMap: Record<string, string> = {}
       for (const c of list) {
         const otherId = getOtherUserId(c)
         try {
@@ -121,6 +158,7 @@ export default function MessagesPage() {
             user.userName ||
             "User"
           avatars[otherId] = main?.url ?? user.photoProfileUrl ?? AVATAR_PLACEHOLDER_SMALL
+          if (user.lastActive) lastActiveMap[otherId] = user.lastActive
         } catch {
           names[otherId] = "User"
           avatars[otherId] = AVATAR_PLACEHOLDER_SMALL
@@ -128,6 +166,16 @@ export default function MessagesPage() {
       }
       setPartnerNames(names)
       setPartnerAvatars(avatars)
+      setPartnerLastActive(lastActiveMap)
+      const initialOnline = new Set<string>()
+      for (const [uid, la] of Object.entries(lastActiveMap)) {
+        if (Date.now() - parseUtcDate(la).getTime() < 2 * 60 * 1000) initialOnline.add(uid)
+      }
+      setOnlineUsers((prev) => {
+        const merged = new Set(prev)
+        initialOnline.forEach((uid) => merged.add(uid))
+        return merged
+      })
       setSelected((prev) => {
         if (list.length === 0) return null
         if (prev && list.some((c) => c.id === prev.id)) return prev
@@ -174,41 +222,79 @@ export default function MessagesPage() {
   const loadMessages = useCallback(async (conv: Conversation) => {
     setMessagesLoading(true)
     try {
-      const { messages: raw, isBlocked } = await chatApi.getMessages(conv.id)
+      const { messages: raw, isBlocked, totalCount } = await chatApi.getMessages(conv.id, 1, 20)
       setMessages(sortMessagesAsc(raw))
       setThreadBlocked(isBlocked)
+      setCurrentPage(1)
+      setHasMoreMessages(raw.length < totalCount)
       chatApi.markAsRead(conv.id).catch(() => {})
     } catch (err) {
       setMessages([])
       setThreadBlocked(false)
+      setHasMoreMessages(false)
       toast.error(err instanceof Error ? err.message : "Could not load messages.")
     } finally {
       setMessagesLoading(false)
     }
   }, [])
 
+  const loadOlderMessages = useCallback(async () => {
+    if (!selected || loadingMore || !hasMoreMessages) return
+    const panel = messagesPanelRef.current
+    const prevScrollHeight = panel?.scrollHeight ?? 0
+    setLoadingMore(true)
+    try {
+      const nextPage = currentPage + 1
+      const { messages: raw, totalCount } = await chatApi.getMessages(selected.id, nextPage, 20)
+      setMessages((prev) => {
+        const ids = new Set(prev.map((m) => m.id))
+        const newMsgs = raw.filter((m) => !ids.has(m.id))
+        const merged = sortMessagesAsc([...newMsgs, ...prev])
+        setHasMoreMessages(merged.length < totalCount)
+        return merged
+      })
+      setCurrentPage(nextPage)
+      if (panel) {
+        requestAnimationFrame(() => {
+          panel.scrollTop = panel.scrollHeight - prevScrollHeight
+        })
+      }
+    } catch {
+      toast.error("Could not load older messages.")
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [selected, loadingMore, hasMoreMessages, currentPage])
+
   useEffect(() => {
     if (selected) {
       selectedConversationIdRef.current = selected.id
       loadMessages(selected)
+      setConversations((prev) =>
+        prev.map((c) => c.id === selected.id ? { ...c, unreadCount: 0 } : c)
+      )
     } else {
       selectedConversationIdRef.current = null
     }
   }, [selected, loadMessages])
 
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" })
+    }, 100)
+  }, [])
+
   useEffect(() => {
-    const panel = messagesPanelRef.current
-    if (!panel) return
-    panel.scrollTop = panel.scrollHeight
-  }, [messages])
+    scrollToBottom()
+  }, [messages, scrollToBottom])
 
   useEffect(() => {
     if (!currentUserId || typeof window === "undefined") return
-    const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "")
-    const hubUrl = `${base}/chatHub`
-    const accessTokenFactory = () => localStorage.getItem("accessToken") ?? ""
+    const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5266").replace(/\/$/, "")
+    const token = localStorage.getItem("accessToken") ?? ""
+    const hubUrl = `${base}/chatHub?access_token=${token}`
     const conn = new HubConnectionBuilder()
-      .withUrl(hubUrl, { accessTokenFactory })
+      .withUrl(hubUrl)
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build()
@@ -252,6 +338,15 @@ export default function MessagesPage() {
         next[idx] = { ...conv, unreadCount: isCurrent ? 0 : (conv.unreadCount ?? 0) + 1 }
         return next
       })
+    })
+
+    conn.on("UserOnline", (data: unknown) => {
+      const uid = typeof data === "string" ? data : String((data as Record<string, unknown>)?.userId ?? "")
+      if (uid) setOnlineUsers((prev) => new Set(prev).add(uid))
+    })
+    conn.on("UserOffline", (data: unknown) => {
+      const uid = typeof data === "string" ? data : String((data as Record<string, unknown>)?.userId ?? "")
+      if (uid) setOnlineUsers((prev) => { const s = new Set(prev); s.delete(uid); return s })
     })
 
     conn.start().then(() => setRealtimeConnected(true)).catch(() => setRealtimeConnected(false))
@@ -313,17 +408,21 @@ export default function MessagesPage() {
       return
     }
     const otherId = getOtherUserId(selected)
+    const text = newMessage.trim()
     setSending(true)
+    setNewMessage("")
     try {
-      await chatApi.sendMessage(otherId, newMessage.trim())
-      setNewMessage("")
-      await loadMessages(selected)
+      await chatApi.sendMessage(otherId, text)
+      const { messages: raw, isBlocked } = await chatApi.getMessages(selected.id)
+      setMessages(sortMessagesAsc(raw))
+      setThreadBlocked(isBlocked)
+      chatApi.markAsRead(selected.id).catch(() => {})
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Message could not be sent.")
     } finally {
       setSending(false)
     }
-  }, [selected, newMessage, sending, getOtherUserId, loadMessages, threadBlocked])
+  }, [selected, newMessage, sending, getOtherUserId, threadBlocked])
 
   if (!currentUserId) {
     return (
@@ -351,7 +450,7 @@ export default function MessagesPage() {
   })
 
   return (
-    <AuthenticatedShell sidebarInsetClassName="flex flex-col overflow-hidden">
+    <AuthenticatedShell sidebarInsetClassName="flex flex-col overflow-hidden max-h-svh">
       {/* Two-panel messenger layout */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
@@ -482,10 +581,15 @@ export default function MessagesPage() {
                           : "hover:bg-muted/60 text-foreground"
                       )}
                     >
-                      <Avatar className="size-10 shrink-0">
-                        <AvatarImage src={avatar} alt={name} />
-                        <AvatarFallback className="text-xs">{getInitials(name)}</AvatarFallback>
-                      </Avatar>
+                      <div className="relative shrink-0">
+                        <Avatar className="size-10">
+                          <AvatarImage src={avatar} alt={name} />
+                          <AvatarFallback className="text-xs">{getInitials(name)}</AvatarFallback>
+                        </Avatar>
+                        {onlineUsers.has(otherId) && (
+                          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-green-500 ring-2 ring-background" />
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-1">
                           <span
@@ -546,12 +650,25 @@ export default function MessagesPage() {
                       Match
                     </Badge>
                   </div>
-                  <Link
-                    href={`/users/${selectedOtherId}`}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                  >
-                    View profile
-                  </Link>
+                  {(() => {
+                    const la = selectedOtherId ? partnerLastActive[selectedOtherId] : null
+                    const isOnline = !!(selectedOtherId && onlineUsers.has(selectedOtherId))
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("size-2 rounded-full shrink-0", isOnline ? "bg-green-500" : "bg-muted-foreground/40")} />
+                        <span className="text-xs text-muted-foreground">
+                          {isOnline ? "Online" : `Last seen ${formatLastSeen(la)}`}
+                        </span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <Link
+                          href={`/users/${selectedOtherId}`}
+                          className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+                        >
+                          View profile
+                        </Link>
+                      </div>
+                    )
+                  })()}
                 </div>
                 {!realtimeConnected && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
@@ -596,7 +713,25 @@ export default function MessagesPage() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((msg, i) => {
+                  <>
+                  {hasMoreMessages && (
+                    <div className="flex justify-center pb-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={loadOlderMessages}
+                        disabled={loadingMore}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        {loadingMore ? (
+                          <><Loader2 className="size-3 animate-spin mr-1" /> Loading...</>
+                        ) : (
+                          "Load older messages"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                  {messages.map((msg, i) => {
                     const isMe = String(msg.senderId) === String(currentUserId)
                     const prevMsg = messages[i - 1]
                     const showAvatar =
@@ -636,9 +771,10 @@ export default function MessagesPage() {
                         </div>
                       </div>
                     )
-                  })
+                  })}
+                  </>
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="pb-2" />
               </div>
 
               {/* Input bar */}

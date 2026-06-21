@@ -40,7 +40,13 @@ export default function MatchesPage() {
     setError(null)
     try {
       const data = await profileApi.getProfileLikes()
-      const list = Array.isArray(data) ? data : []
+      const raw = Array.isArray(data) ? data : []
+      const seen = new Set<string>()
+      const list = raw.filter((p) => {
+        if (!p.id || seen.has(p.id)) return false
+        seen.add(p.id)
+        return true
+      })
       setProfiles(list.map(mapProfileLikeToCard))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load matches")

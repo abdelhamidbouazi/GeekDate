@@ -32,23 +32,41 @@ function unwrapEnvelope(raw: unknown): unknown {
 }
 
 /**
- * GET /api/Chat/conversations/{id}/messages returns Response&lt;ConversationMessagesResponseDto&gt;:
- * { messages: PaginatedResult&lt;Message&gt;, isBlocked } — message rows live at messages.data.
+ * GET /api/Chat/conversations/{id}/messages returns either:
+ * - Response&lt;ConversationMessagesResponseDto&gt;: { data: { messages: { data: [...] }, isBlocked } }
+ * - Response&lt;PaginatedResult&lt;Message&gt;&gt;: { data: { data: [...] } }
  */
 export function parseConversationMessagesJson(raw: unknown): {
   messages: Message[];
   isBlocked: boolean;
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
 } {
+  const defaults = { messages: [] as Message[], isBlocked: false, totalCount: 0, pageNumber: 1, pageSize: 20 };
   const inner = unwrapEnvelope(raw);
-  if (!inner || typeof inner !== "object") {
-    return { messages: [], isBlocked: false };
-  }
+  if (!inner || typeof inner !== "object") return defaults;
+
   const o = inner as Record<string, unknown>;
   const messagesWrapper = (o.messages ?? o.Messages) as Record<string, unknown> | undefined;
-  const pageData = messagesWrapper?.data ?? messagesWrapper?.Data;
-  const messages = Array.isArray(pageData) ? (pageData as Message[]) : [];
-  const isBlocked = Boolean(o.isBlocked ?? o.IsBlocked);
-  return { messages, isBlocked };
+  if (messagesWrapper && typeof messagesWrapper === "object") {
+    const pageData = messagesWrapper.data ?? messagesWrapper.Data;
+    return {
+      messages: Array.isArray(pageData) ? (pageData as Message[]) : [],
+      isBlocked: Boolean(o.isBlocked ?? o.IsBlocked),
+      totalCount: Number(messagesWrapper.totalCount ?? messagesWrapper.TotalCount ?? 0),
+      pageNumber: Number(messagesWrapper.pageNumber ?? messagesWrapper.PageNumber ?? 1),
+      pageSize: Number(messagesWrapper.pageSize ?? messagesWrapper.PageSize ?? 20),
+    };
+  }
+  const directData = (o.data ?? o.Data) as unknown;
+  return {
+    messages: Array.isArray(directData) ? (directData as Message[]) : [],
+    isBlocked: Boolean(o.isBlocked ?? o.IsBlocked),
+    totalCount: Number(o.totalCount ?? o.TotalCount ?? 0),
+    pageNumber: Number(o.pageNumber ?? o.PageNumber ?? 1),
+    pageSize: Number(o.pageSize ?? o.PageSize ?? 20),
+  };
 }
 
 export const chatApi = {

@@ -63,8 +63,33 @@ export function NotificationsDialog({ open, onOpenChange }: NotificationsDialogP
     setLoading(true)
     try {
       const { notificationApi } = await import("@/lib/services/notification-api")
+      const { profileApi } = await import("@/lib/services/profile-api")
       const list = await notificationApi.getUnread()
-      setNotifications(list.map(mapApiNotification))
+      const userCache: Record<string, { firstName?: string; lastName?: string; userName?: string; photoProfileUrl?: string; photos?: { url: string; isMain: boolean }[] }> = {}
+      const enriched = await Promise.all(
+        list.map(async (n) => {
+          const uid = n.fromUserId
+          if (uid && !userCache[uid]) {
+            try {
+              userCache[uid] = await profileApi.getUser(uid)
+            } catch {
+              userCache[uid] = {}
+            }
+          }
+          const u = uid ? userCache[uid] : undefined
+          const mainPhoto = u?.photos?.find((p) => p.isMain) ?? u?.photos?.[0]
+          return {
+            ...n,
+            fromUser: u ? {
+              firstName: u.firstName,
+              lastName: u.lastName,
+              userName: u.userName,
+              photoProfileUrl: mainPhoto?.url ?? u.photoProfileUrl,
+            } : undefined,
+          }
+        })
+      )
+      setNotifications(enriched.map(mapApiNotification))
     } catch {
       setNotifications([])
     } finally {

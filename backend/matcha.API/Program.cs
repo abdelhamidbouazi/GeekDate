@@ -76,17 +76,19 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseCors(builder => builder.AllowAnyHeader()
+     .AllowAnyMethod()
+     .AllowCredentials()
+     .WithOrigins("http://localhost:3001", "http://localhost:3000", "http://localhost:3006", "https://matcha-dating.vercel.app"));
+
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 app.ApplyMigration();
 
-app.UseCors(builder => builder.AllowAnyHeader()
-     .AllowAnyMethod()
-     .AllowCredentials()
-     .WithOrigins("http://localhost:3001", "http://localhost:3000", "https://matcha-dating.vercel.app"));
-
-
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 
