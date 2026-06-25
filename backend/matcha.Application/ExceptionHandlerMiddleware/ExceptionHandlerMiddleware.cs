@@ -56,8 +56,11 @@ namespace matcha.Application.ExceptionHandlerMiddleware
 
                     default:
                         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                         response.Message = "Internal server error";
+                        Console.WriteLine($"[ERROR] Unhandled exception: {ex.GetType().Name}: {ex.Message}");
+                        Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                        if (ex.InnerException != null)
+                            Console.WriteLine($"[ERROR] Inner: {ex.InnerException.Message}");
                         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
                         break;
                 }

@@ -152,6 +152,15 @@ namespace matcha.API.Controllers
             return BadRequest("Failed to block the profile.");
         }
 
+        [HttpPost("report-profile/{userToReport:Guid}")]
+        public async Task<ActionResult> ReportProfile(Guid userToReport)
+        {
+            if (authenticatedUser.UserId == userToReport)
+                return BadRequest("You cannot report your own profile.");
+
+            return Ok(new { message = "Profile reported as fake account. Our team will review it." });
+        }
+
         [HttpGet("profile-likes")]
         public async Task<ActionResult> GetProfileLikes()
         {

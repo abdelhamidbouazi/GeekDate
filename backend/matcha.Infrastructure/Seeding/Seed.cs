@@ -47,7 +47,7 @@ namespace matcha.Infrastructure.Seeding
             var faker = new Faker("fr");
             var users = new List<AppUser>();
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 500; i++)
             {
                 var gender = i % 2 == 0 ? Gender.Male : Gender.Female;
 

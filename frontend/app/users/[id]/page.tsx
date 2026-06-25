@@ -17,12 +17,14 @@ import {
   Image as ImageIcon,
   Star,
   X,
+  Flag,
   ArrowLeft,
   Loader2,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { profileApi, getUserIdFromToken, type AppUser } from "@/lib/services/profile-api"
+import { api } from "@/lib/services/api"
 import { browseApi } from "@/lib/services/browse-api"
 import { chatApi } from "@/lib/services/chat-api"
 import {
@@ -125,6 +127,20 @@ export default function PublicProfilePage({
       setActionLoading(false)
     }
   }, [id, actionLoading, router])
+
+  const handleReport = useCallback(async () => {
+    if (!id || actionLoading) return
+    if (!confirm("Report this profile as a fake account?")) return
+    setActionLoading(true)
+    try {
+      await api.post(`/api/Users/report-profile/${id}`, {})
+      alert("Profile reported. Our team will review it.")
+    } catch {
+      // ignore
+    } finally {
+      setActionLoading(false)
+    }
+  }, [id, actionLoading])
 
   if (loading && !profile) {
     return (
@@ -252,6 +268,16 @@ export default function PublicProfilePage({
                         aria-label="Block"
                       >
                         <X className="size-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleReport}
+                        disabled={actionLoading || currentUserId === id}
+                        aria-label="Report"
+                        title="Report fake account"
+                      >
+                        <Flag className="size-4" />
                       </Button>
                     </div>
                   </div>

@@ -299,6 +299,15 @@ namespace matcha.DomainServices.Services.UserService
 
         public async Task<bool> LikeUserAsync(Guid targetUserId)
         {
+            var currentUser = await _authenticatedUser.GetAuthenticatedAsync();
+            if (currentUser == null)
+                throw new UnauthorizedAccessException("User not found.");
+
+            var photos = await _unitOfWork.GetRepository<IGenericRepoAsync<Photo>>()
+                .GetAllAsync(p => p.UserId == currentUser.Id);
+            if (photos == null || !photos.Any())
+                throw new InvalidOperationException("You must have at least one profile picture to like someone.");
+
             await _unitOfWork.CreateTransaction();
 
             try
