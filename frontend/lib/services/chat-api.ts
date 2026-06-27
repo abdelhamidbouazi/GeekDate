@@ -61,6 +61,25 @@ function unwrapEnvelope(raw: unknown): unknown {
   return raw;
 }
 
+function normalizePaginatedMessages(raw: unknown): unknown[] {
+  if (!raw || typeof raw !== "object") return []
+  const o = raw as Record<string, unknown>
+  const directData = o.data ?? o.Data
+  if (Array.isArray(directData)) return directData
+  if (directData && typeof directData === "object") {
+    const inner = directData as Record<string, unknown>
+    const nested = inner.data ?? inner.Data
+    if (Array.isArray(nested)) return nested
+  }
+  const messagesWrapper = o.messages ?? o.Messages
+  if (messagesWrapper && typeof messagesWrapper === "object") {
+    const inner = messagesWrapper as Record<string, unknown>
+    const nested = inner.data ?? inner.Data
+    if (Array.isArray(nested)) return nested
+  }
+  return []
+}
+
 /**
  * GET /api/Chat/conversations/{id}/messages returns Response&lt;ConversationMessagesResponseDto&gt;:
  * { messages: PaginatedResult&lt;Message&gt;, isBlocked } — message rows live at messages.data.
@@ -74,11 +93,10 @@ export function parseConversationMessagesJson(raw: unknown): {
     return { messages: [], isBlocked: false };
   }
   const o = inner as Record<string, unknown>;
-  const messagesWrapper = (o.messages ?? o.Messages) as Record<string, unknown> | undefined;
-  const pageData = messagesWrapper?.data ?? messagesWrapper?.Data;
-  const messages = Array.isArray(pageData)
-    ? pageData.map(normalizeMessage).filter((message): message is Message => Boolean(message))
-    : [];
+  const pageData = normalizePaginatedMessages(o);
+  const messages = pageData
+    .map(normalizeMessage)
+    .filter((message): message is Message => Boolean(message))
   const isBlocked = Boolean(o.isBlocked ?? o.IsBlocked);
   return { messages, isBlocked };
 }

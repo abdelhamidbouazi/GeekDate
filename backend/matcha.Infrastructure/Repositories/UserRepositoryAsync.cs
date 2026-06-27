@@ -471,6 +471,14 @@ namespace sparkdates.Infrastructure.Repositories
                 AND u.Id NOT IN (SELECT BlockedUserId FROM UserBlocks WHERE BlockingUserId = @excludeUserId)
                 AND u.Id NOT IN (SELECT BlockingUserId FROM UserBlocks WHERE BlockedUserId = @excludeUserId)
                 AND u.Id NOT IN (SELECT LikedUserId FROM UserLikes WHERE LikerUserId = @excludeUserId)
+                AND u.Id NOT IN (
+                    SELECT CASE
+                        WHEN User1Id = @excludeUserId THEN User2Id
+                        ELSE User1Id
+                    END
+                    FROM Matches
+                    WHERE User1Id = @excludeUserId OR User2Id = @excludeUserId
+                )
                 AND ({genderCondition})
                 AND DATEDIFF(YEAR, u.DateOfBirth, GETDATE()) BETWEEN @minAge AND @maxAge
                 AND u.FameRating BETWEEN @minFame AND @maxFame

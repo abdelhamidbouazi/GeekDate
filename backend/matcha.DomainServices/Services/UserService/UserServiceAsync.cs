@@ -450,6 +450,9 @@ namespace sparkdates.DomainServices.Services.UserService
             if (userLike is null)
                 return false;
 
+            if (userLike.IsMatched)
+                return false;
+
             await _unitOfWork.CreateTransaction();
 
             try
