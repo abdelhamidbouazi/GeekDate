@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Users.Commands.CompleteUserProfile
+namespace sparkdates.Application.Features.Users.Commands.CompleteUserProfile
 {
     public class CompleteUserProfileCommand : IRequest<Response<UserProfileDto>>
     {

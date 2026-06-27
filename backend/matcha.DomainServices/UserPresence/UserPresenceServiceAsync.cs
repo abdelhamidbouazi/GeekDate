@@ -1,8 +1,8 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.UoW;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.UoW;
 
-namespace matcha.DomainServices.UserPresence
+namespace sparkdates.DomainServices.UserPresence
 {
     public class UserPresenceServiceAsync : IUserPresenceServiceAsync
     {

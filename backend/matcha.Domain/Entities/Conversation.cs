@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace matcha.Domain.Entities
+namespace sparkdates.Domain.Entities
 {
     public class Conversation : EntityBase
     {

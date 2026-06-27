@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BRAND } from "@/lib/branding"
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -49,15 +50,15 @@ export function Navbar() {
             >
               <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-background/50 p-1.5 border border-border/30">
                 <Image
-                  src="/geeksdatingnobg.png"
-                  alt="GeekDate Logo"
+                  src="/sparkdates-logo.svg"
+                  alt={`${BRAND.name} logo`}
                   fill
                   className="object-contain"
                   sizes="40px"
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-semibold text-foreground">GeekDate</span>
+                <span className="text-lg font-semibold text-foreground">{BRAND.name}</span>
                 <span className="text-[10px] text-muted-foreground font-medium tracking-wider">
                   DATING FOR GEEKS
                 </span>

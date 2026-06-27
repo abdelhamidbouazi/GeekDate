@@ -1,10 +1,10 @@
-# Matcha Dating Website
+# SparkDates Dating Website
 
 **Version:** 4.2
 
 ## Summary
 
-Matcha is a modern dating website project aimed at facilitating meaningful connections in a tech-driven world. By leveraging advanced algorithms and user-friendly interfaces, Matcha seeks to bring romance back to the digital age.
+SparkDates is a modern dating website project aimed at facilitating meaningful connections in a tech-driven world. By leveraging advanced algorithms and user-friendly interfaces, SparkDates seeks to bring romance back to the digital age.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ Matcha is a modern dating website project aimed at facilitating meaningful conne
 
 ## Introduction
 
-In an era where human connections are increasingly mediated by technology, Matcha aims to provide a platform where individuals can find love and companionship authentically. This README serves as a guide to understanding and contributing to the Matcha project.
+In an era where human connections are increasingly mediated by technology, SparkDates aims to provide a platform where individuals can find love and companionship authentically. This README serves as a guide to understanding and contributing to the SparkDates project.
 
 ## Features
 

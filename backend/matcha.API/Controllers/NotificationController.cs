@@ -1,11 +1,11 @@
-﻿using matcha.Application.Interfaces.Services.Notification;
-using matcha.Application.ResponseWrappers;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Interfaces.Services.Notification;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     [Authorize]
     public class NotificationController : BaseApiController

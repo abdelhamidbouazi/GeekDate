@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.Profile
+﻿namespace sparkdates.Application.Dtos.Profile
 {
     public class UserPhotoDto
     {

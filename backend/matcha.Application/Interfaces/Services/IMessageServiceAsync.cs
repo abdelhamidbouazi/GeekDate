@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.Common;
-using matcha.Application.ResponseWrappers;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.Common;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IMessageServiceAsync
     {

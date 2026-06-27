@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.Common;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.Common;
+using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IMessageRepositoryAsync : IGenericRepoAsync<Message>
     {

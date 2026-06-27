@@ -1,10 +1,10 @@
-﻿using matcha.Application.Interfaces.Services.Email;
-using matcha.Infrastructure.Services.EmailService;
-using matcha.Infrastructure.Settings;
+﻿using sparkdates.Application.Interfaces.Services.Email;
+using sparkdates.Infrastructure.Services.EmailService;
+using sparkdates.Infrastructure.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.Extensions
+namespace sparkdates.Infrastructure.Extensions
 {
     public static class EmailServiceExtension
     {

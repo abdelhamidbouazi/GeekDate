@@ -1,5 +1,6 @@
 import { api } from "./api";
 import { dedupeAsync } from "@/lib/utils/request-dedupe";
+import { endpoints } from "@/lib/api/endpoints";
 
 export interface BrowseUserDto {
   id: string;
@@ -11,6 +12,27 @@ export interface BrowseUserDto {
   age: number | null;
   commonTagsCount: number;
   interestIds: string[] | null;
+}
+
+function normalizeBrowseUser(raw: Record<string, unknown>): BrowseUserDto {
+  const interestRaw = raw.interestIds ?? raw.InterestIds
+  return {
+    id: String(raw.id ?? raw.Id ?? ""),
+    firstName: String(raw.firstName ?? raw.FirstName ?? ""),
+    lastName: String(raw.lastName ?? raw.LastName ?? ""),
+    fameRating: Number(raw.fameRating ?? raw.FameRating ?? 0),
+    profilePicture:
+      (raw.profilePicture ?? raw.ProfilePicture ?? null) as string | null,
+    distanceInMeters: Number(raw.distanceInMeters ?? raw.DistanceInMeters ?? 0),
+    age:
+      raw.age != null || raw.Age != null
+        ? Number(raw.age ?? raw.Age)
+        : null,
+    commonTagsCount: Number(raw.commonTagsCount ?? raw.CommonTagsCount ?? 0),
+    interestIds: Array.isArray(interestRaw)
+      ? interestRaw.map((id) => String(id))
+      : null,
+  }
 }
 
 export interface GetInterestsDto {
@@ -100,34 +122,50 @@ export function filtersToSearchPreferences(
   };
 }
 
-export const browseApi = {
-  browseUsers: () => api.get<BrowseUserDto[]>("/api/Matchmaking"),
+function normalizeInterestDto(raw: Record<string, unknown>): GetInterestsDto {
+  const id = raw.id ?? raw.Id
+  const name = raw.name ?? raw.Name
+  return {
+    id: id != null ? String(id) : undefined,
+    name: name != null ? String(name) : undefined,
+  }
+}
 
-  searchUsers: (prefs: SearchPreferencesRequest) =>
-    api.post<BrowseUserDto[]>("/api/Matchmaking/search", prefs),
+export const browseApi = {
+  browseUsers: async () => {
+    const data = await api.get<unknown[]>(endpoints.matchmaking.browse)
+    return Array.isArray(data) ? data.map((row) => normalizeBrowseUser(row as Record<string, unknown>)) : []
+  },
+
+  searchUsers: async (prefs: SearchPreferencesRequest) => {
+    const data = await api.post<unknown[]>(endpoints.matchmaking.search, prefs)
+    return Array.isArray(data) ? data.map((row) => normalizeBrowseUser(row as Record<string, unknown>)) : []
+  },
 
   getSearchPreferences: () =>
     dedupeAsync("browseApi:getSearchPreferences", async () => {
       const r = await api.get<{
         data?: SearchPreferencesDto;
         Data?: SearchPreferencesDto;
-      }>("/api/search/preferences");
+      }>(endpoints.searchPreferences.get);
       return r?.data ?? r?.Data ?? null;
     }),
 
   updateSearchPreferences: (prefs: SearchPreferencesRequest) =>
-    api.put("/api/search/preferences", prefs),
+    api.put(endpoints.searchPreferences.update, prefs),
 
   resetSearchPreferences: () =>
-    api.post("/api/search/preferences/reset"),
+    api.post(endpoints.searchPreferences.reset),
 
   getInterests: () =>
     dedupeAsync("browseApi:getInterests", async () => {
-      const res = await api.get<{ data?: GetInterestsDto[]; Data?: GetInterestsDto[] } | GetInterestsDto[]>(
-        "/api/Interest/GetAll"
+      const res = await api.get<{ data?: unknown[]; Data?: unknown[] } | unknown[]>(
+        endpoints.interests.list
       );
       const arr = Array.isArray(res) ? res : (res?.data ?? res?.Data);
-      return Array.isArray(arr) ? arr : [];
+      return Array.isArray(arr)
+        ? arr.map((row) => normalizeInterestDto(row as Record<string, unknown>))
+        : [];
     }),
 
   /** POST /api/Interest — creates a catalog interest (`{ name }`). */
@@ -136,13 +174,13 @@ export const browseApi = {
     if (!trimmed) {
       throw new Error("Interest name is required.");
     }
-    const r = await api.post<InterestCreateResponse>("/api/Interest", { name: trimmed });
+    const r = await api.post<InterestCreateResponse>(endpoints.interests.create, { name: trimmed });
     return unwrapCreatedInterest(r);
   },
 
   likeProfile: (userId: string) =>
-    api.post<void>(`/api/Users/like-profile/${userId}`, {}),
+    api.post<void>(endpoints.users.likeProfile(userId), {}),
 
   unlikeProfile: (userId: string) =>
-    api.post<void>(`/api/Users/unlike-profile/${userId}`, {}),
+    api.post<void>(endpoints.users.unlikeProfile(userId), {}),
 };

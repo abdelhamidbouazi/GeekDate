@@ -81,7 +81,7 @@ function ProfileViewCard({
             </p>
             <div className="flex items-center gap-2 text-xs text-emerald-700/90 dark:text-emerald-400/90">
               <Sparkles className="size-3.5 shrink-0" aria-hidden />
-              <span>Curiosity is how matches start on Matcha.</span>
+              <span>Curiosity is how matches start on SparkDates.</span>
             </div>
           </div>
 

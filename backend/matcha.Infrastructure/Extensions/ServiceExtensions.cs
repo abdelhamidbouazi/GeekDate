@@ -1,17 +1,17 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.Interfaces.Services.Cloudinary;
-using matcha.Application.Interfaces.Services.Notification;
-using matcha.Infrastructure.Repositories;
-using matcha.Infrastructure.Services.Authentication;
-using matcha.Infrastructure.Services.CloudinaryStorage;
-using matcha.Infrastructure.Services.Notification;
-using matcha.Infrastructure.Services.RealtimeNotification;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.Interfaces.Services.Cloudinary;
+using sparkdates.Application.Interfaces.Services.Notification;
+using sparkdates.Infrastructure.Repositories;
+using sparkdates.Infrastructure.Services.Authentication;
+using sparkdates.Infrastructure.Services.CloudinaryStorage;
+using sparkdates.Infrastructure.Services.Notification;
+using sparkdates.Infrastructure.Services.RealtimeNotification;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.Extensions
+namespace sparkdates.Infrastructure.Extensions
 {
     public static class ServiceExtensions
     {

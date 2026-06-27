@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Services;
+﻿using sparkdates.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.Hubs
+namespace sparkdates.Infrastructure.Hubs
 {
     [Authorize]
     public class ChatHub : Hub

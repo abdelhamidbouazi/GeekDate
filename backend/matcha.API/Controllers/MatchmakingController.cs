@@ -1,9 +1,9 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Specifications;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Specifications;
 using Microsoft.AspNetCore.Mvc;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     public class MatchmakingController : BaseApiController
     {

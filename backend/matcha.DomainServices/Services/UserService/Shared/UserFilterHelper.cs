@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Domain.Common.Enums;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Domain.Common.Enums;
+using sparkdates.Domain.Entities;
 
-namespace matcha.DomainServices.Services.UserService.Shared
+namespace sparkdates.DomainServices.Services.UserService.Shared
 {
     public static class UserFilterHelper
     {

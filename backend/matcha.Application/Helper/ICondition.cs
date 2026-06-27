@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace matcha.Application.Helper
+namespace sparkdates.Application.Helper
 {
     public interface ICondition
     {

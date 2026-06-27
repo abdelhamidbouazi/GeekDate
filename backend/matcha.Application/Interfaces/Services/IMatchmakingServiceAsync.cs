@@ -1,6 +1,6 @@
-﻿using matcha.Application.Dtos.Users;
+﻿using sparkdates.Application.Dtos.Users;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IMatchmakingServiceAsync
     {

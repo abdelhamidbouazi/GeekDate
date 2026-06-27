@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Profile.Commands.SetUserLocation
+namespace sparkdates.Application.Features.Profile.Commands.SetUserLocation
 {
     public class SetUserLocationCommand : IRequest<Response<bool>>
     {

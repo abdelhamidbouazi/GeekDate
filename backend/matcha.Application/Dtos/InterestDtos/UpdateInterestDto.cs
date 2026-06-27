@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.InterestDtos
+﻿namespace sparkdates.Application.Dtos.InterestDtos
 {
     public class UpdateInterestDto
     {

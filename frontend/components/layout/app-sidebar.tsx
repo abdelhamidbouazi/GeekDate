@@ -6,6 +6,7 @@ import Link from "next/link"
 import {
   Search,
   Heart,
+  ThumbsUp,
   MessageCircle,
   Eye,
   User,
@@ -31,16 +32,18 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { profileApi, getUserIdFromToken } from "@/lib/services/profile-api"
+import { BRAND } from "@/lib/branding"
 
 const defaultUser = {
   name: "Your Profile",
   email: "",
-  avatar: "/geeksdatingnobg.png",
+  avatar: "/sparkdates-logo.svg",
 }
 
 const navMainItems = [
   { title: "Browse", url: "/browse", icon: Search },
   { title: "Matches", url: "/matches", icon: Heart },
+  { title: "Likes", url: "/likes", icon: ThumbsUp },
   { title: "Messages", url: "/messages", icon: MessageCircle },
   { title: "Profile Views", url: "/profile-views", icon: Eye },
 ]
@@ -58,8 +61,14 @@ const navComingSoon = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState(defaultUser)
-  const [badges, setBadges] = React.useState<{ matches: number; messages: number; profileViews: number }>({
+  const [badges, setBadges] = React.useState<{
+    matches: number
+    likes: number
+    messages: number
+    profileViews: number
+  }>({
     matches: 0,
+    likes: 0,
     messages: 0,
     profileViews: 0,
   })
@@ -67,9 +76,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const fetchBadges = useCallback(async () => {
     try {
-      const [likes, convs, views, notifs] = await Promise.all([
+      const [matchList, likesReceived, convs, views, notifs] = await Promise.all([
         import("@/lib/services/profile-api").then((m) =>
-          m.profileApi.getProfileLikes()
+          m.profileApi.getMatches()
+        ),
+        import("@/lib/services/profile-api").then((m) =>
+          m.profileApi.getLikesReceived()
         ),
         import("@/lib/services/chat-api").then((m) => m.chatApi.getConversations()),
         import("@/lib/services/profile-api").then((m) =>
@@ -79,13 +91,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           m.notificationApi.getUnread()
         ),
       ])
-      const likesList = Array.isArray(likes) ? likes : []
+      const matchesList = Array.isArray(matchList) ? matchList : []
+      const likesList = Array.isArray(likesReceived) ? likesReceived : []
       const convsList = Array.isArray(convs) ? convs : []
       const viewsList = Array.isArray(views) ? views : []
       const notifsList = Array.isArray(notifs) ? notifs : []
       const totalUnread = convsList.reduce((s, c) => s + (c.unreadCount ?? 0), 0)
       setBadges({
-        matches: likesList.length,
+        matches: matchesList.length,
+        likes: likesList.length,
         messages: totalUnread,
         profileViews: viewsList.length,
       })
@@ -123,11 +137,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       badge:
         item.title === "Matches"
           ? badges.matches
-          : item.title === "Messages"
-            ? badges.messages
-            : item.title === "Profile Views"
-              ? badges.profileViews
-              : null,
+          : item.title === "Likes"
+            ? badges.likes
+            : item.title === "Messages"
+              ? badges.messages
+              : item.title === "Profile Views"
+                ? badges.profileViews
+                : null,
     })),
     navSecondary,
     navComingSoon,
@@ -147,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Heart className="size-5 fill-white text-white" />
                 </div>
                 <div className="grid leading-tight">
-                  <span className="text-base font-black tracking-tight">matchDate</span>
+                  <span className="text-base font-black tracking-tight">{BRAND.name}</span>
                   <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/70">
                     Real sparks
                   </span>

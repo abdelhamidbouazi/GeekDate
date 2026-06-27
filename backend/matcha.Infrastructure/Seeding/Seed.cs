@@ -1,11 +1,11 @@
 ﻿using Bogus;
-using matcha.Domain.Common.Enums;
-using matcha.Domain.Entities;
-using matcha.Infrastructure.ApplicationDbContext;
+using sparkdates.Domain.Common.Enums;
+using sparkdates.Domain.Entities;
+using sparkdates.Infrastructure.ApplicationDbContext;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 
-namespace matcha.Infrastructure.Seeding
+namespace sparkdates.Infrastructure.Seeding
 {
     public class Seed
     {

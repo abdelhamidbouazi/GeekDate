@@ -1,17 +1,28 @@
-using matcha.API.Authentication;
-using matcha.Application.ExceptionHandlerMiddleware;
-using matcha.Application.Extensions;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.MappingProfile;
-using matcha.DomainServices.Extensions;
-using matcha.Infrastructure.Extensions;
-using matcha.Infrastructure.Hubs;
-using matcha.Infrastructure.Seeding;
+using sparkdates.API.Authentication;
+using sparkdates.Application.ExceptionHandlerMiddleware;
+using sparkdates.Application.Extensions;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.MappingProfile;
+using sparkdates.DomainServices.Extensions;
+using sparkdates.Infrastructure.Extensions;
+using sparkdates.Infrastructure.Hubs;
+using sparkdates.Infrastructure.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = new[]
+{
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3006",
+    "https://sparkdates-dating.vercel.app",
+    builder.Configuration["AppSettings:FrontUri"]
+}
+.Where(origin => !string.IsNullOrWhiteSpace(origin))
+.Distinct()
+.ToArray();
 
 // Add services to the container.
 builder.Services.AddDbContextRegistration(builder.Configuration);
@@ -83,7 +94,7 @@ app.ApplyMigration();
 app.UseCors(builder => builder.AllowAnyHeader()
      .AllowAnyMethod()
      .AllowCredentials()
-     .WithOrigins("http://localhost:3001", "http://localhost:3000", "https://matcha-dating.vercel.app"));
+     .WithOrigins(allowedOrigins!));
 
 
 app.UseHttpsRedirection();

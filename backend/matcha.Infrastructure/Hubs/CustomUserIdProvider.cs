@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
-namespace matcha.Infrastructure.Hubs
+namespace sparkdates.Infrastructure.Hubs
 {
     public class CustomUserIdProvider : IUserIdProvider
     {

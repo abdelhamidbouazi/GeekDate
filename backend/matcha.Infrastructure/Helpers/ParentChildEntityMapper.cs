@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace matcha.Infrastructure.Helpers
+namespace sparkdates.Infrastructure.Helpers
 {
     public class ParentChildEntityMapper<TParent, TChild, TKey>
     {

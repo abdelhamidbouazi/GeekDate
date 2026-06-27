@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Common.Enums;
+﻿using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Application.Dtos.RealtimeDtos
+namespace sparkdates.Application.Dtos.RealtimeDtos
 {
     public class RealtimeNotificationDto
     {

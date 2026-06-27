@@ -1,13 +1,13 @@
-﻿using matcha.Application.Dtos.Common;
-using matcha.Application.Dtos.RealtimeDtos;
-using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.UoW;
-using matcha.Application.ResponseWrappers;
-using matcha.Domain.Common.Enums;
+﻿using sparkdates.Application.Dtos.Common;
+using sparkdates.Application.Dtos.RealtimeDtos;
+using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Domain.Common.Enums;
 
-namespace matcha.DomainServices.Services.Message
+namespace sparkdates.DomainServices.Services.Message
 {
     public class MessageServiceAsync : IMessageServiceAsync
     {

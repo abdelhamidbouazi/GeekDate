@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Interfaces.Services
+﻿namespace sparkdates.Application.Interfaces.Services
 {
     public interface IUserPresenceServiceAsync
     {

@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Domain.Entities;
 using System.Security.Claims;
 
-namespace matcha.API.Authentication
+namespace sparkdates.API.Authentication
 {
     public class AuthenticatedUser : IAuthenticatedUser
     {

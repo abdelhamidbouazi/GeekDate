@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.AccountDtos
+﻿namespace sparkdates.Application.Dtos.AccountDtos
 {
     public class RegisterDto
     {

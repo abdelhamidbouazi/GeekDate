@@ -20,11 +20,12 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { BRAND } from "@/lib/branding"
 
 export const metadata: Metadata = {
-  title: "MatchDate - Meet People Who Feel Real",
+  title: BRAND.name,
   description:
-    "A modern dating app for real chemistry, thoughtful matches, and confident first dates.",
+    "A modern dating platform that helps people discover meaningful connections through shared interests, compatibility, and authentic interactions.",
 }
 
 const featuredProfiles = [
@@ -86,7 +87,7 @@ const features = [
     icon: BadgeCheck,
     title: "Verified-first profiles",
     description:
-      "MatchDate highlights real people with trust signals, fresh photos, and profile completeness.",
+      "SparkDates highlights real people with trust signals, fresh photos, and profile completeness.",
   },
   {
     icon: MapPin,
@@ -123,12 +124,12 @@ export default function HomePage() {
         <div className="absolute left-1/2 top-24 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-rose-500/20 blur-3xl" />
 
         <header className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-white/10 bg-white/[0.07] px-4 py-3 shadow-2xl shadow-black/20 backdrop-blur-2xl sm:px-5">
-          <Link href="/home" className="flex items-center gap-3" aria-label="MatchDate home">
+          <Link href="/home" className="flex items-center gap-3" aria-label={`${BRAND.name} home`}>
             <span className="grid size-11 place-items-center rounded-full bg-linear-to-br from-rose-500 via-pink-500 to-orange-400 shadow-lg shadow-rose-500/30">
               <Heart className="size-5 fill-white text-white" />
             </span>
             <span>
-              <span className="block text-lg font-black tracking-tight">matchDate</span>
+              <span className="block text-lg font-black tracking-tight">{BRAND.name}</span>
               <span className="hidden text-[11px] font-semibold uppercase tracking-[0.32em] text-white/45 sm:block">
                 Real sparks
               </span>
@@ -182,7 +183,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-              MatchDate turns casual swipes into confident connections with beautiful profiles,
+              SparkDates turns casual swipes into confident connections with beautiful profiles,
               real compatibility cues, and conversations designed to become first dates.
             </p>
 
@@ -335,7 +336,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-black uppercase tracking-[0.32em] text-rose-500">
-              The MatchDate flow
+              The SparkDates flow
             </p>
             <h2 className="mt-4 text-4xl font-black tracking-[-0.04em] sm:text-6xl">
               Swipe less randomly. Meet more intentionally.
@@ -422,7 +423,7 @@ export default function HomePage() {
           <div className="space-y-5">
             <p className="text-lg leading-8 text-white/68">
               Great dating UI is not only beautiful. It also helps people trust the
-              experience. MatchDate brings safety into the product without making the app
+              experience. SparkDates brings safety into the product without making the app
               feel cold or bureaucratic.
             </p>
             <div className="grid gap-3">
@@ -456,7 +457,7 @@ export default function HomePage() {
             Make dating feel exciting, premium, and human.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/68">
-            Join MatchDate and discover a warmer way to meet people who want the same
+            Join SparkDates and discover a warmer way to meet people who want the same
             kind of spark you do.
           </p>
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
@@ -485,10 +486,10 @@ export default function HomePage() {
             <span className="grid size-10 place-items-center rounded-full bg-linear-to-br from-rose-500 to-orange-400">
               <Heart className="size-5 fill-white text-white" />
             </span>
-            <span className="text-lg font-black">matchDate</span>
+            <span className="text-lg font-black">{BRAND.name}</span>
           </Link>
           <p className="text-sm">
-            © {new Date().getFullYear()} MatchDate. Built for real chemistry.
+            © {new Date().getFullYear()} SparkDates. Built for real chemistry.
           </p>
         </div>
       </footer>

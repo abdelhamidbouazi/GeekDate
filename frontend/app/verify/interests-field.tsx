@@ -48,16 +48,24 @@ export function InterestsField({
   const qLower = q.toLowerCase()
 
   const filtered = useMemo(() => {
+    const withIds = interests.filter((i) => interestId(i) !== null)
     if (!qLower) {
-      return [...interests].sort((a, b) => interestName(a).localeCompare(interestName(b), undefined, { sensitivity: "base" }))
+      return [...withIds].sort((a, b) =>
+        interestName(a).localeCompare(interestName(b), undefined, { sensitivity: "base" })
+      )
     }
-    return interests
+    return withIds
       .filter((i) => interestName(i).toLowerCase().includes(qLower))
-      .sort((a, b) => interestName(a).localeCompare(interestName(b), undefined, { sensitivity: "base" }))
+      .sort((a, b) =>
+        interestName(a).localeCompare(interestName(b), undefined, { sensitivity: "base" })
+      )
   }, [interests, qLower])
 
   const hasExactName = useMemo(
-    () => interests.some((i) => interestName(i).toLowerCase() === qLower),
+    () =>
+      interests.some(
+        (i) => interestId(i) !== null && interestName(i).toLowerCase() === qLower
+      ),
     [interests, qLower]
   )
 
@@ -134,7 +142,11 @@ export function InterestsField({
             )}
 
             {q && filtered.length === 0 && !canAddNew && (
-              <p className="text-muted-foreground text-sm">No matches. Adjust your search.</p>
+              <p className="text-muted-foreground text-sm">
+                {hasExactName
+                  ? "That interest already exists — select it from the list above."
+                  : "No matches. Adjust your search."}
+              </p>
             )}
           </>
         )}

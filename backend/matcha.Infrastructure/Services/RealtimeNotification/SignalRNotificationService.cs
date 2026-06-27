@@ -1,12 +1,12 @@
-﻿using matcha.Application.Dtos.RealtimeDtos;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Common.Enums;
-using matcha.Infrastructure.Hubs;
+﻿using sparkdates.Application.Dtos.RealtimeDtos;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Common.Enums;
+using sparkdates.Infrastructure.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
-namespace matcha.Infrastructure.Services.RealtimeNotification
+namespace sparkdates.Infrastructure.Services.RealtimeNotification
 {
     public class SignalRNotificationService : IRealtimeNotificationServiceAsync
     {
@@ -40,7 +40,7 @@ namespace matcha.Infrastructure.Services.RealtimeNotification
 
         public async Task SendNotificationAsync(Guid toUserId, Guid fromUserId, NotificationType type, string message = "", Guid? conversationId = null)
         {
-            var notification = new matcha.Domain.Entities.Notification
+            var notification = new sparkdates.Domain.Entities.Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = toUserId,

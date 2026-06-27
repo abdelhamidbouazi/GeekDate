@@ -361,5 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/matcha.API/Controllers/WeatherForecastController.cs
-/matcha.API/WeatherForecast.cs
+/sparkdates.API/Controllers/WeatherForecastController.cs
+/sparkdates.API/WeatherForecast.cs

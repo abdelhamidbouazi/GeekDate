@@ -1,9 +1,9 @@
-﻿using matcha.Application.Dtos.UserInterestsDtos;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.UserInterestsDtos;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.UserIneterests.Queries.GetUserInterest
+namespace sparkdates.Application.Features.UserIneterests.Queries.GetUserInterest
 {
     public class GetUserInterestQueryHandler : IRequestHandler<GetUserInterestQuery, Response<GetUserInterestDto>>
     {

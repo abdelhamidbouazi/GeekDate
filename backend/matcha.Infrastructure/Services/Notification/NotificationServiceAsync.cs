@@ -1,8 +1,8 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Notification;
-using matcha.Application.Interfaces.UoW;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Notification;
+using sparkdates.Application.Interfaces.UoW;
 
-namespace matcha.Infrastructure.Services.Notification
+namespace sparkdates.Infrastructure.Services.Notification
 {
     public class NotificationServiceAsync : INotificationServiceAsync
     {

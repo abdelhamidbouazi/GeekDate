@@ -1,13 +1,13 @@
-﻿using matcha.Application.Dtos.Common;
-using matcha.Application.Helper;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Infrastructure.Helpers;
-using matcha.Shared.Extensions;
+﻿using sparkdates.Application.Dtos.Common;
+using sparkdates.Application.Helper;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Infrastructure.Helpers;
+using sparkdates.Shared.Extensions;
 using Microsoft.Data.SqlClient;
 using System.Linq.Expressions;
 
-namespace matcha.Infrastructure.ReposUsingCustomQueryBuilder
+namespace sparkdates.Infrastructure.ReposUsingCustomQueryBuilder
 {
     public class GenericRepoAsync<T> : IGenericRepoAsync<T> where T : class
     {

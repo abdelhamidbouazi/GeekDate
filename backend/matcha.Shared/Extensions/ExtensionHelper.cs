@@ -1,4 +1,4 @@
-﻿namespace matcha.Shared.Extensions
+﻿namespace sparkdates.Shared.Extensions
 {
     public static class ExtensionHelper
     {

@@ -1,16 +1,16 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Infrastructure.ApplicationDbContext;
-using matcha.Infrastructure.Database;
-using matcha.Infrastructure.Repositories;
-using matcha.Infrastructure.ReposUsingCustomQueryBuilder;
-using matcha.Infrastructure.Seeding;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Infrastructure.ApplicationDbContext;
+using sparkdates.Infrastructure.Database;
+using sparkdates.Infrastructure.Repositories;
+using sparkdates.Infrastructure.ReposUsingCustomQueryBuilder;
+using sparkdates.Infrastructure.Seeding;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.Extensions
+namespace sparkdates.Infrastructure.Extensions
 {
     public static class ApplicationDbContextExtension
     {

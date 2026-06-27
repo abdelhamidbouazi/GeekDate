@@ -1,10 +1,10 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Profile.Queries.WhoLikedMe
+namespace sparkdates.Application.Features.Profile.Queries.WhoLikedMe
 {
     public class WhoLikedMeQuery : IRequest<Response<IEnumerable<UserProfileLikedDto>>>
     {

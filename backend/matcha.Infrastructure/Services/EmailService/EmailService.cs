@@ -1,11 +1,11 @@
-using matcha.Application.Interfaces.Services.Email;
-using matcha.Infrastructure.Settings;
+using sparkdates.Application.Interfaces.Services.Email;
+using sparkdates.Infrastructure.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 
-namespace matcha.Infrastructure.Services.EmailService
+namespace sparkdates.Infrastructure.Services.EmailService
 {
     public class EmailService : IEmailService
     {

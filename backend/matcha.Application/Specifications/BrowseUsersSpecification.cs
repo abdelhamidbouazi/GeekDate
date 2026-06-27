@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Common.Enums;
+﻿using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Application.Specifications
+namespace sparkdates.Application.Specifications
 {
     public class BrowseUsersSpecification
     {

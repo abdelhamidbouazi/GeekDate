@@ -1,6 +1,6 @@
-﻿using matcha.Application.Dtos.UserInterestsDtos;
+﻿using sparkdates.Application.Dtos.UserInterestsDtos;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IUserInterestsService
     {

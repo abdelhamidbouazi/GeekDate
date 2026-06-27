@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.RealtimeDtos;
-using matcha.Domain.Common.Enums;
+﻿using sparkdates.Application.Dtos.RealtimeDtos;
+using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IRealtimeNotificationServiceAsync
     {

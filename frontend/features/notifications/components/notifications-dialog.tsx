@@ -15,6 +15,7 @@ import {
   type Notification,
 } from "@/features/notifications/components/notification-item"
 import { CheckCheck, Inbox } from "lucide-react"
+import { profileApi, resolveProfileMediaUrl } from "@/lib/services/profile-api"
 
 interface NotificationsDialogProps {
   open: boolean
@@ -22,7 +23,7 @@ interface NotificationsDialogProps {
 }
 
 function mapApiNotification(
-  n: { id: string; type: number; isRead: boolean; createdAt: string; fromUser?: { firstName?: string; lastName?: string; userName?: string; photoProfileUrl?: string } }
+  n: { id: string; type: number; isRead: boolean; createdAt: string; fromUserId?: string; fromUser?: { firstName?: string; lastName?: string; userName?: string; photoProfileUrl?: string } }
 ): Notification {
   const typeMap: Record<number, Notification["type"]> = {
     1: "like",
@@ -46,7 +47,7 @@ function mapApiNotification(
     id: n.id,
     type: typeMap[n.type] ?? "like",
     text: textMap[n.type] ?? "New notification",
-    user: { name, avatar: n.fromUser?.photoProfileUrl ?? PLACEHOLDER_AVATAR },
+    user: { name, avatar: resolveProfileMediaUrl(n.fromUser?.photoProfileUrl) ?? PLACEHOLDER_AVATAR },
     unread: !n.isRead,
     createdAt: new Date(n.createdAt),
   }
@@ -64,7 +65,25 @@ export function NotificationsDialog({ open, onOpenChange }: NotificationsDialogP
     try {
       const { notificationApi } = await import("@/lib/services/notification-api")
       const list = await notificationApi.getUnread()
-      setNotifications(list.map(mapApiNotification))
+      const enriched = await Promise.all(
+        list.map(async (notification) => {
+          if (!notification.fromUserId) return notification
+          const fromUser = await profileApi.getUser(notification.fromUserId).catch(() => null)
+          const mainPhoto = fromUser?.photos?.find((photo) => photo.isMain) ?? fromUser?.photos?.[0]
+          return {
+            ...notification,
+            fromUser: fromUser
+              ? {
+                  firstName: fromUser.firstName,
+                  lastName: fromUser.lastName,
+                  userName: fromUser.userName,
+                  photoProfileUrl: mainPhoto?.url ?? fromUser.photoProfileUrl ?? undefined,
+                }
+              : undefined,
+          }
+        })
+      )
+      setNotifications(enriched.map(mapApiNotification))
     } catch {
       setNotifications([])
     } finally {

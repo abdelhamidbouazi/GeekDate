@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Common.Enums;
+﻿using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Application.Dtos.BrowseDtos
+namespace sparkdates.Application.Dtos.BrowseDtos
 {
     public class BrowseUsersRequest
     {

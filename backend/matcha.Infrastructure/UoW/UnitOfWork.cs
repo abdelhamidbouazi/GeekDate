@@ -1,10 +1,10 @@
-﻿using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Application.Interfaces.UoW;
+﻿using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Application.Interfaces.UoW;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.UoW
+namespace sparkdates.Infrastructure.UoW
 {
     public class UnitOfWork : IUnitOfWork
     {

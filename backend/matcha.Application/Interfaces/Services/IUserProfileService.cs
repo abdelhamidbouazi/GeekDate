@@ -1,13 +1,13 @@
-﻿using matcha.Application.Dtos.Profile;
-using matcha.Application.Dtos.UserBlocks;
-using matcha.Application.Dtos.UserLikes;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Features.Profile.Commands.CompleteUserPreferences;
-using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.Profile;
+using sparkdates.Application.Dtos.UserBlocks;
+using sparkdates.Application.Dtos.UserLikes;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Features.Profile.Commands.CompleteUserPreferences;
+using sparkdates.Application.Features.Profile.Commands.UpdateUserProfile;
+using sparkdates.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IUserProfileService
     {

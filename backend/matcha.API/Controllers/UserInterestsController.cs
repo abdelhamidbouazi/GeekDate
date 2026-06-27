@@ -1,13 +1,13 @@
-﻿using matcha.Application.Dtos.UserInterestsDtos;
-using matcha.Application.Features.UserIneterests.Commands.CreateUserInterest;
-using matcha.Application.Features.UserIneterests.Commands.DeleteUserInterest;
-using matcha.Application.Features.UserIneterests.Commands.UpdateUserInterest;
-using matcha.Application.Features.UserIneterests.Queries.GetUserInterest;
-using matcha.Application.Features.UserIneterests.Queries.GetUserInterests;
+﻿using sparkdates.Application.Dtos.UserInterestsDtos;
+using sparkdates.Application.Features.UserIneterests.Commands.CreateUserInterest;
+using sparkdates.Application.Features.UserIneterests.Commands.DeleteUserInterest;
+using sparkdates.Application.Features.UserIneterests.Commands.UpdateUserInterest;
+using sparkdates.Application.Features.UserIneterests.Queries.GetUserInterest;
+using sparkdates.Application.Features.UserIneterests.Queries.GetUserInterests;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     public class UserInterestsController : BaseApiController
     {

@@ -1,4 +1,4 @@
-﻿namespace matcha.Domain.ValueObjects
+﻿namespace sparkdates.Domain.ValueObjects
 {
     public class UserLocation
     {

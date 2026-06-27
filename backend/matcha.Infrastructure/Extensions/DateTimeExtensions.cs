@@ -1,4 +1,4 @@
-﻿namespace matcha.Infrastructure.Extensions
+﻿namespace sparkdates.Infrastructure.Extensions
 {
     public static class DateTimeExtensions
     {

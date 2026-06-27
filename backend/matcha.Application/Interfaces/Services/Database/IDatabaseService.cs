@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace matcha.Application.Interfaces.Services.Database
+namespace sparkdates.Application.Interfaces.Services.Database
 {
     public interface IDatabaseService : IDisposable
     {

@@ -1,8 +1,8 @@
-﻿using matcha.Application.Features.Interests.Queries.GetInterests;
+﻿using sparkdates.Application.Features.Interests.Queries.GetInterests;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Application.Extensions
+namespace sparkdates.Application.Extensions
 {
     public static class ApplicationExtensions
     {

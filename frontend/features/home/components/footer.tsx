@@ -1,10 +1,12 @@
+import { BRAND } from "@/lib/branding"
+
 export function Footer() {
   return (
     <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-background border-t">
       <div className="container mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div>
-            <h3 className="font-semibold mb-4">GeekDate</h3>
+            <h3 className="font-semibold mb-4">{BRAND.name}</h3>
             <p className="text-sm text-muted-foreground">
               A dating platform built by geeks, for geeks. Find your coding partner, gaming buddy, or tech soulmate.
             </p>
@@ -25,7 +27,7 @@ export function Footer() {
           </div>
         </div>
         <div className="pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} GeekDate. 42 School Project.</p>
+          <p>&copy; {new Date().getFullYear()} {BRAND.name}. 42 School Project.</p>
         </div>
       </div>
     </footer>

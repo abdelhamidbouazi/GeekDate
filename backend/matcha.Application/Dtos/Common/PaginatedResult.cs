@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.Common
+﻿namespace sparkdates.Application.Dtos.Common
 {
     public class PaginatedResult<T>
     {

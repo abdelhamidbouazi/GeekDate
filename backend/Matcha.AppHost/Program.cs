@@ -6,9 +6,9 @@ var sql = builder.AddSqlServer("sql", password: sqlPassword)
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent);
 
-var db = sql.AddDatabase("matchadb");
+var db = sql.AddDatabase("sparkdatesdb");
 
-var api = builder.AddProject("matcha-api", "../matcha.API/matcha.API.csproj")
+var api = builder.AddProject("sparkdates-api", "../sparkdates.API/sparkdates.API.csproj")
     .WithReference(db);
 
 builder.Build().Run();

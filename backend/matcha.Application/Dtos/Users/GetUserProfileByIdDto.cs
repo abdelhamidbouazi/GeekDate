@@ -1,7 +1,7 @@
-﻿using matcha.Domain.Common.Enums;
-using matcha.Domain.Entities;
+﻿using sparkdates.Domain.Common.Enums;
+using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Dtos.Users
+namespace sparkdates.Application.Dtos.Users
 {
     public class GetUserProfileByIdDto
     {

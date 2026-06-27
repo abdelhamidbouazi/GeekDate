@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Entities;
+﻿using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IResetPasswordRepositoryAsync : IGenericRepoAsync<ResetPassword>
     {

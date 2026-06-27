@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Entities;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Entities;
 
-namespace matcha.DomainServices.Services.UserSearchPreferencesService
+namespace sparkdates.DomainServices.Services.UserSearchPreferencesService
 {
     public class UserSearchPreferencesServiceAsync : IUserSearchPreferencesServiceAsync
     {

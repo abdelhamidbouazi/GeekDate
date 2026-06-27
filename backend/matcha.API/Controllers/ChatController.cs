@@ -1,12 +1,12 @@
-﻿using matcha.Application.Dtos.ChatDtos;
-using matcha.Application.Dtos.Common;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.ResponseWrappers;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.ChatDtos;
+using sparkdates.Application.Dtos.Common;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     public class ChatController : BaseApiController
     {

@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace matcha.Infrastructure.Helpers
+namespace sparkdates.Infrastructure.Helpers
 {
     public class SqlExpressionVisitor<T> : ExpressionVisitor where T : class
     {

@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     [AllowAnonymous]
     public class TestController : BaseApiController

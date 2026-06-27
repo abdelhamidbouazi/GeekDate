@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.Profile;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+using sparkdates.Application.Dtos.Profile;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 
-namespace matcha.Application.Features.Profile.Commands.UploadPhotos
+namespace sparkdates.Application.Features.Profile.Commands.UploadPhotos
 {
     public class UploadPhotoCommand : IRequest<Response<IReadOnlyList<UserPhotoDto>>>
     {

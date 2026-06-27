@@ -1,7 +1,7 @@
-﻿using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Users.Commands.DeleteUserProfile
+namespace sparkdates.Application.Features.Users.Commands.DeleteUserProfile
 {
     public class DeleteUserProfileCommand : IRequest<Response<bool>>
     {

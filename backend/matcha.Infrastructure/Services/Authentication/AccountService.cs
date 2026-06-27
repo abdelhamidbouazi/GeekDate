@@ -1,14 +1,14 @@
-using matcha.Application.Dtos.AccountDtos;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.Interfaces.Services.Email;
-using matcha.Application.Interfaces.UoW;
-using matcha.Application.ResponseWrappers;
-using matcha.Application.Shared;
-using matcha.Domain.Entities;
-using matcha.Shared.Constants;
+using sparkdates.Application.Dtos.AccountDtos;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.Interfaces.Services.Email;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Application.Shared;
+using sparkdates.Domain.Entities;
+using sparkdates.Shared.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +18,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace matcha.Infrastructure.Services.Authentication
+namespace sparkdates.Infrastructure.Services.Authentication
 {
     public class AccountService : IAccountService
     {

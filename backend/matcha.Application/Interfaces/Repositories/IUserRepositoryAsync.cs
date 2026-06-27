@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Specifications;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Specifications;
+using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IUserRepositoryAsync : IGenericRepoAsync<AppUser>
     {

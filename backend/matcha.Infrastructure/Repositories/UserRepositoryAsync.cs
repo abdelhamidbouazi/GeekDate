@@ -1,16 +1,16 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Helper;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Application.Interfaces.UoW;
-using matcha.Application.Specifications;
-using matcha.Domain.Entities;
-using matcha.Infrastructure.Helpers;
-using matcha.Infrastructure.ReposUsingCustomQueryBuilder;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Helper;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Application.Specifications;
+using sparkdates.Domain.Entities;
+using sparkdates.Infrastructure.Helpers;
+using sparkdates.Infrastructure.ReposUsingCustomQueryBuilder;
 using Microsoft.Data.SqlClient;
 
-namespace matcha.Infrastructure.Repositories
+namespace sparkdates.Infrastructure.Repositories
 {
     public class UserRepositoryAsync : GenericRepoAsync<AppUser>, IUserRepositoryAsync
     {
@@ -267,6 +267,16 @@ namespace matcha.Infrastructure.Repositories
                 -- Exclude users I already liked
                 AND u.Id NOT IN (
                     SELECT LikedUserId FROM UserLikes WHERE LikerUserId = @excludeUserId
+                )
+
+                -- Exclude users already matched with me
+                AND u.Id NOT IN (
+                    SELECT CASE
+                        WHEN User1Id = @excludeUserId THEN User2Id
+                        ELSE User1Id
+                    END
+                    FROM Matches
+                    WHERE User1Id = @excludeUserId OR User2Id = @excludeUserId
                 )
 
                 AND ({genderCondition})

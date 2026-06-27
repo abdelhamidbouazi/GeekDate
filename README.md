@@ -1,4 +1,4 @@
-# Matcha
+# SparkDates
 
 A modern dating platform built with .NET and Next.js.
 
@@ -64,12 +64,12 @@ make up
   make seed
   ```
 
-- **Seed count**: Set `SEED_USER_COUNT` in `.env` (default: 500). The Matcha evaluation requires at least 500 profiles.
+- **Seed count**: Set `SEED_USER_COUNT` in `.env` (default: 500). The SparkDates evaluation requires at least 500 profiles.
 
 ## Project Structure
 
 ```
-matcha/
+sparkdates/
 ├── backend/          # .NET 8 API, EF Core, SQL Server
 ├── frontend/         # Next.js 16, React 19
 ├── compose.yaml      # Docker Compose stack

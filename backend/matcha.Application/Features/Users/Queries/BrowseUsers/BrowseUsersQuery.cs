@@ -1,9 +1,9 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Users.Queries.BrowseUsers
+namespace sparkdates.Application.Features.Users.Queries.BrowseUsers
 {
     public class BrowseUsersQuery : IRequest<Response<IEnumerable<BrowseUserDto>>>
     {

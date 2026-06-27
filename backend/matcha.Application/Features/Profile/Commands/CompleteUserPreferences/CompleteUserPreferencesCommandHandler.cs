@@ -1,11 +1,11 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Profile.Commands.CompleteUserPreferences
+namespace sparkdates.Application.Features.Profile.Commands.CompleteUserPreferences
 {
     public class CompleteUserPreferencesCommandHandler : IRequestHandler<CompleteUserPreferencesCommand, Response<UserProfileDto>>
     {
@@ -27,9 +27,6 @@ namespace matcha.Application.Features.Profile.Commands.CompleteUserPreferences
             var errors = new Dictionary<string, string>();
             if (!request.UserInterestIds.Any())
                 errors.Add(nameof(request.UserInterestIds), "At least you need to choose 1 interest");
-
-            if (request.Pictures is null || !request.Pictures.Any())
-                errors.Add(nameof(request.Pictures), "At least you need to upload 1 picture");
 
             if (request.Pictures?.Count() > 5)
                 errors.Add(nameof(request.Pictures), "you are not able to upload more than 5 pictures");

@@ -14,16 +14,7 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { setAuthCookie } from "@/lib/auth"
-
-type ImpersonateResponse = {
-  userId: string
-  userName: string
-  email: string
-  token: string
-  resetPasswordUrl: string
-}
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+import { impersonateUser, type ImpersonateResponse } from "@/lib/api/dev"
 
 export default function AdminPage() {
   const router = useRouter()
@@ -44,28 +35,7 @@ export default function AdminPage() {
     setResult(null)
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/api/dev/impersonate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Dev-Secret": devSecret.trim(),
-        },
-        body: JSON.stringify({ identifier: identifier.trim() }),
-      })
-
-      const text = await res.text()
-      if (!res.ok) {
-        let message = `Request failed (${res.status})`
-        try {
-          const json = JSON.parse(text) as { message?: string }
-          if (json?.message) message = json.message
-        } catch {
-          if (text?.trim()) message = text
-        }
-        throw new Error(message)
-      }
-
-      const data = JSON.parse(text) as ImpersonateResponse
+      const data = await impersonateUser(identifier.trim(), devSecret)
       setResult(data)
 
       if (data?.token) {
@@ -192,4 +162,3 @@ export default function AdminPage() {
     </div>
   )
 }
-

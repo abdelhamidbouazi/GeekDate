@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IGenericRepositoryAsync<T> where T : class
     {

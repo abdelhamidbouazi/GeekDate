@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Shared
+﻿namespace sparkdates.Application.Shared
 {
     public static class EmailTemplates
     {
@@ -30,7 +30,7 @@
             <p><a href='{{confirmationLink}}' style='color: #007bff; text-decoration: none; font-weight: bold;'>Confirm Your Email Address</a></p>
             <p>If you did not request this, please ignore this email. Your account will remain unconfirmed.</p>
             <p>Best regards,</p>
-            <p>The Matcha Team</p>
+            <p>The SparkDates Team</p>
           </body>
         </html>";
 
@@ -43,7 +43,7 @@
             <p><a href=""{{confirmationLink}}"" style='color: #007bff; text-decoration: none; font-weight: bold;'>Reset Your Password</a></p>
             <p>If you did not request a password reset, please ignore this email. Your password will remain unchanged.</p>
             <p>Best regards,</p>
-            <p>The Matcha Team</p>
+            <p>The SparkDates Team</p>
           </body>
         </html>";
 

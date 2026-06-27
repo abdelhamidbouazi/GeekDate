@@ -1,5 +1,5 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Domain.Entities;
 
 public interface IConfirmEmailTokenRepositoryAsync : IGenericRepoAsync<ConfirmEmailToken>
 {

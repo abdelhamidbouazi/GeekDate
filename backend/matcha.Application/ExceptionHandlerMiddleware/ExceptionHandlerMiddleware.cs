@@ -1,10 +1,10 @@
-﻿using matcha.Application.Exceptions;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Exceptions;
+using sparkdates.Application.ResponseWrappers;
 using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Text.Json;
 
-namespace matcha.Application.ExceptionHandlerMiddleware
+namespace sparkdates.Application.ExceptionHandlerMiddleware
 {
     public class ExceptionHandlerMiddleware : IMiddleware
     {

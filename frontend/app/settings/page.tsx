@@ -1,158 +1,206 @@
 "use client"
 
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import {
+  Bell,
+  Loader2,
+  Lock,
+  Settings,
+  Shield,
+  User,
+  UserCircle,
+} from "lucide-react"
 import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Settings, Bell, Shield, User, Globe } from "lucide-react"
+import { AccountSettingsTab } from "@/components/settings/account-settings-tab"
+import { DangerZone } from "@/components/settings/danger-zone"
+import { NotificationsSettingsTab } from "@/components/settings/notifications-settings-tab"
+import { PrivacySettingsTab } from "@/components/settings/privacy-settings-tab"
+import { ProfileSettingsTab } from "@/components/settings/profile-settings-tab"
+import { SecuritySettingsTab } from "@/components/settings/security-settings-tab"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useSettingsForm } from "@/features/settings/hooks/use-settings-form"
+import { toast } from "sonner"
 
-export default function SettingsPage() {
+const TAB_VALUES = [
+  "account",
+  "profile",
+  "privacy",
+  "notifications",
+  "security",
+  "danger",
+] as const
+
+function SettingsPageInner() {
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab")
+  const defaultTab =
+    tabParam && TAB_VALUES.includes(tabParam as (typeof TAB_VALUES)[number])
+      ? tabParam
+      : "account"
+
+  const {
+    loading,
+    saving,
+    account,
+    profile,
+    privacy,
+    notifications,
+    security,
+    interests,
+    interestsLoading,
+    accountError,
+    profileError,
+    setAccount,
+    setProfile,
+    setPrivacy,
+    setNotifications,
+    setSecurity,
+    saveAccount,
+    saveProfile,
+    savePrivacy,
+    saveNotifications,
+    toggleInterest,
+    addInterest,
+  } = useSettingsForm()
+
+  if (loading) {
+    return (
+      <AuthenticatedShell>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      </AuthenticatedShell>
+    )
+  }
+
   return (
     <AuthenticatedShell>
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <div className="px-4 lg:px-6">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="rounded-full bg-gray-500/10 p-3">
-                    <Settings className="size-6 text-gray-500" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-                    <p className="text-muted-foreground">
-                      Manage your account settings and preferences.
-                    </p>
-                  </div>
+      <div className="flex flex-1 flex-col">
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="rounded-full bg-gradient-to-br from-rose-500/20 to-orange-400/20 p-3">
+                  <Settings className="size-6 text-rose-500" />
                 </div>
-
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <User className="size-5" />
-                        <CardTitle>Account</CardTitle>
-                      </div>
-                      <CardDescription>Manage your account information</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label>Email</Label>
-                        <input
-                          type="email"
-                          defaultValue="user@geekdate.com"
-                          className="w-full mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label>Password</Label>
-                        <Button variant="outline" className="w-full mt-1">Change Password</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Bell className="size-5" />
-                        <CardTitle>Notifications</CardTitle>
-                      </div>
-                      <CardDescription>Control your notification preferences</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>New Matches</Label>
-                          <p className="text-sm text-muted-foreground">Get notified when you have a new match</p>
-                        </div>
-                        <input type="checkbox" defaultChecked className="size-4" />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Messages</Label>
-                          <p className="text-sm text-muted-foreground">Receive notifications for new messages</p>
-                        </div>
-                        <input type="checkbox" defaultChecked className="size-4" />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Profile Views</Label>
-                          <p className="text-sm text-muted-foreground">Get notified when someone views your profile</p>
-                        </div>
-                        <input type="checkbox" defaultChecked className="size-4" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Shield className="size-5" />
-                        <CardTitle>Privacy</CardTitle>
-                      </div>
-                      <CardDescription>Manage your privacy settings</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Show Online Status</Label>
-                          <p className="text-sm text-muted-foreground">Let others see when you&apos;re online</p>
-                        </div>
-                        <input type="checkbox" defaultChecked className="size-4" />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label>Show Profile to Everyone</Label>
-                          <p className="text-sm text-muted-foreground">Make your profile visible to all users</p>
-                        </div>
-                        <input type="checkbox" defaultChecked className="size-4" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Globe className="size-5" />
-                        <CardTitle>Preferences</CardTitle>
-                      </div>
-                      <CardDescription>Customize your experience</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label>Language</Label>
-                        <select className="w-full mt-1 px-3 py-2 rounded-md border border-input bg-background text-sm">
-                          <option>English</option>
-                          <option>French</option>
-                          <option>Spanish</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label>Distance Range</Label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="100"
-                          defaultValue="50"
-                          className="w-full mt-2"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>1 km</span>
-                          <span>50 km</span>
-                          <span>100 km</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline">Cancel</Button>
-                    <Button>Save Changes</Button>
-                  </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+                  <p className="text-muted-foreground">
+                    Manage your account, profile, and preferences.
+                  </p>
                 </div>
               </div>
+
+              <Tabs defaultValue={defaultTab} className="w-full">
+                <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
+                  <TabsTrigger value="account" className="gap-1.5">
+                    <User className="size-4" />
+                    <span className="hidden sm:inline">Account</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="profile" className="gap-1.5">
+                    <UserCircle className="size-4" />
+                    <span className="hidden sm:inline">Profile</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="privacy" className="gap-1.5">
+                    <Shield className="size-4" />
+                    <span className="hidden sm:inline">Privacy</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="notifications" className="gap-1.5">
+                    <Bell className="size-4" />
+                    <span className="hidden sm:inline">Notifications</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="security" className="gap-1.5">
+                    <Lock className="size-4" />
+                    <span className="hidden sm:inline">Security</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="danger"
+                    className="gap-1.5 text-destructive data-[state=active]:text-destructive"
+                  >
+                    <span className="sm:hidden">!</span>
+                    <span className="hidden sm:inline">Danger Zone</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="account" className="mt-0">
+                  <AccountSettingsTab
+                    account={account}
+                    error={accountError}
+                    saving={saving}
+                    onChange={(patch) => setAccount((prev) => ({ ...prev, ...patch }))}
+                    onSave={saveAccount}
+                  />
+                </TabsContent>
+
+                <TabsContent value="profile" className="mt-0">
+                  <ProfileSettingsTab
+                    profile={profile}
+                    interests={interests}
+                    interestsLoading={interestsLoading}
+                    error={profileError}
+                    saving={saving}
+                    onChange={(patch) => setProfile((prev) => ({ ...prev, ...patch }))}
+                    onToggleInterest={toggleInterest}
+                    onInterestCreated={addInterest}
+                    onInterestError={(msg) => toast.error(msg)}
+                    onSave={saveProfile}
+                  />
+                </TabsContent>
+
+                <TabsContent value="privacy" className="mt-0">
+                  <PrivacySettingsTab
+                    privacy={privacy}
+                    saving={saving}
+                    onChange={(patch) => setPrivacy((prev) => ({ ...prev, ...patch }))}
+                    onSave={savePrivacy}
+                  />
+                </TabsContent>
+
+                <TabsContent value="notifications" className="mt-0">
+                  <NotificationsSettingsTab
+                    notifications={notifications}
+                    saving={saving}
+                    onChange={(patch) =>
+                      setNotifications((prev) => ({ ...prev, ...patch }))
+                    }
+                    onSave={saveNotifications}
+                  />
+                </TabsContent>
+
+                <TabsContent value="security" className="mt-0">
+                  <SecuritySettingsTab
+                    security={security}
+                    onSecurityChange={(patch) =>
+                      setSecurity((prev) => ({ ...prev, ...patch }))
+                    }
+                  />
+                </TabsContent>
+
+                <TabsContent value="danger" className="mt-0">
+                  <DangerZone />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>
+      </div>
     </AuthenticatedShell>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthenticatedShell>
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          </div>
+        </AuthenticatedShell>
+      }
+    >
+      <SettingsPageInner />
+    </Suspense>
   )
 }

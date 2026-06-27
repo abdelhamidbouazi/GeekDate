@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.UserInterestsDtos;
-using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Entities;
+using sparkdates.Application.Dtos.UserInterestsDtos;
+using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Entities;
 
-namespace matcha.DomainServices.Services.UserInterestsService
+namespace sparkdates.DomainServices.Services.UserInterestsService
 {
     public class UserInterestsService : IUserInterestsService
     {

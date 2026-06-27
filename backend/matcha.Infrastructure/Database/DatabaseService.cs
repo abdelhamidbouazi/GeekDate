@@ -1,10 +1,10 @@
-﻿using matcha.Application.Interfaces.Services.Database;
-using matcha.Infrastructure.ApplicationDbContext;
-using matcha.Infrastructure.Helpers;
+﻿using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Infrastructure.ApplicationDbContext;
+using sparkdates.Infrastructure.Helpers;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
-namespace matcha.Infrastructure.Database
+namespace sparkdates.Infrastructure.Database
 {
     public class DatabaseService : IDatabaseService
     {

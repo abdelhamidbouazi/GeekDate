@@ -1,13 +1,13 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Entities;
-using matcha.Infrastructure.ReposUsingCustomQueryBuilder;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Entities;
+using sparkdates.Infrastructure.ReposUsingCustomQueryBuilder;
 using Microsoft.Data.SqlClient;
 using System.Text.Json;
 
-namespace matcha.Infrastructure.Repositories
+namespace sparkdates.Infrastructure.Repositories
 {
     public class UserSearchPreferenceRepositoryAsync : GenericRepoAsync<UserSearchPreference>, IUserSearchPreferenceRepositoryAsync
     {
@@ -22,7 +22,7 @@ namespace matcha.Infrastructure.Repositories
         {
             _builder.ClearAll();
 
-            var condition = new matcha.Application.Helper.Condition("UserId = @UserId",
+            var condition = new sparkdates.Application.Helper.Condition("UserId = @UserId",
                             new SqlParameter("@UserId", userId));
 
             var query = _builder.Select().Where(condition).Build();

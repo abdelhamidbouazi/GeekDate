@@ -1,10 +1,10 @@
-name: matcha
+name: sparkdates
 
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     platform: linux/amd64
-    container_name: matcha-sqlserver
+    container_name: sparkdates-sqlserver
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
@@ -29,14 +29,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: matcha-backend
+    container_name: sparkdates-backend
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 8080
       ASPNETCORE_URLS: http://+:8080
       DatabaseProvider: SqlServer
       SqlMode: Docker
-      ConnectionStrings__SqlDocker: "Server=sqlserver,1433;Database=matchadb;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      ConnectionStrings__SqlDocker: "Server=sqlserver,1433;Database=sparkdatesdb;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
       AppSettings__BaseUri: http://localhost:${BACKEND_PORT:-8080}
       AppSettings__FrontUri: http://localhost:${FRONTEND_PORT:-3000}
       SmtpSettings__SmtpServer: ${SMTP_SERVER:-smtp.gmail.com}
@@ -44,6 +44,7 @@ services:
       SmtpSettings__EnableSsl: ${SMTP_ENABLE_SSL:-true}
       SmtpSettings__Email: ${SMTP_EMAIL:?Set SMTP_EMAIL in .env}
       SmtpSettings__Password: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in .env}
+      SmtpSettings__LogOnly: ${SMTP_LOG_ONLY:-false}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
@@ -56,7 +57,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-    container_name: matcha-frontend
+    container_name: sparkdates-frontend
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -69,8 +70,8 @@ services:
         condition: service_started
 
   adminer:
-    image: adminer:latest
-    container_name: matcha-adminer
+    image: adminer:4.8.1
+    container_name: sparkdates-adminer
     ports:
       - "${ADMINER_PORT:-8081}:8080"
     depends_on:
