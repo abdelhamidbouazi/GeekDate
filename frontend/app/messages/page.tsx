@@ -90,8 +90,8 @@ export default function MessagesPage() {
   const hubRef = useRef<HubConnection | null>(null)
   const selectedConversationIdRef = useRef<string | null>(null)
   const lastJoinedConversationIdRef = useRef<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesPanelRef = useRef<HTMLDivElement | null>(null)
+  const shouldStickToBottomRef = useRef(true)
 
   const getOtherUserId = useCallback(
     (c: Conversation) => (currentUserId === c.user1Id ? c.user2Id : c.user1Id),
@@ -168,6 +168,7 @@ export default function MessagesPage() {
       const { messages: raw, isBlocked } = await chatApi.getMessages(conv.id)
       setMessages(sortMessagesAsc(raw))
       setThreadBlocked(isBlocked)
+      shouldStickToBottomRef.current = true
       chatApi.markAsRead(conv.id).catch(() => {})
     } catch (err) {
       setMessages([])
@@ -176,6 +177,12 @@ export default function MessagesPage() {
     } finally {
       setMessagesLoading(false)
     }
+  }, [])
+
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const panel = messagesPanelRef.current
+    if (!panel) return
+    panel.scrollTo({ top: panel.scrollHeight, behavior })
   }, [])
 
   useEffect(() => {
@@ -188,10 +195,11 @@ export default function MessagesPage() {
   }, [selected, loadMessages])
 
   useEffect(() => {
-    const panel = messagesPanelRef.current
-    if (!panel) return
-    panel.scrollTop = panel.scrollHeight
-  }, [messages])
+    if (!selected) return
+    if (!shouldStickToBottomRef.current) return
+    const frame = requestAnimationFrame(() => scrollMessagesToBottom("auto"))
+    return () => cancelAnimationFrame(frame)
+  }, [messages, selected, scrollMessagesToBottom])
 
   useEffect(() => {
     if (!currentUserId || typeof window === "undefined") return
@@ -231,6 +239,7 @@ export default function MessagesPage() {
         )
           return prev
         if (prev.some((m) => m.id === msg.id)) return prev
+        shouldStickToBottomRef.current = true
         return sortMessagesAsc([...prev, msg])
       })
       setConversations((prev) => {
@@ -305,15 +314,28 @@ export default function MessagesPage() {
     const otherId = getOtherUserId(selected)
     setSending(true)
     try {
-      await chatApi.sendMessage(otherId, newMessage.trim())
+      const sent = await chatApi.sendMessage(otherId, newMessage.trim())
+      if (sent) {
+        setMessages((prev) => {
+          shouldStickToBottomRef.current = true
+          if (prev.some((m) => m.id === sent.id)) return sortMessagesAsc(prev)
+          return sortMessagesAsc([...prev, sent])
+        })
+      }
       setNewMessage("")
-      await loadMessages(selected)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Message could not be sent.")
     } finally {
       setSending(false)
     }
-  }, [selected, newMessage, sending, getOtherUserId, loadMessages, threadBlocked])
+  }, [selected, newMessage, sending, getOtherUserId, threadBlocked])
+
+  const handleMessagesScroll = useCallback(() => {
+    const panel = messagesPanelRef.current
+    if (!panel) return
+    const distanceFromBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight
+    shouldStickToBottomRef.current = distanceFromBottom < 120
+  }, [])
 
   if (!currentUserId) {
     return (
@@ -555,6 +577,7 @@ export default function MessagesPage() {
               <div
                 ref={messagesPanelRef}
                 className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-1.5"
+                onScroll={handleMessagesScroll}
                 style={{
                   background:
                     "radial-gradient(ellipse 80% 40% at 50% 0%, oklch(0.7 0.08 250 / 0.04), transparent 60%)",
@@ -628,7 +651,6 @@ export default function MessagesPage() {
                     )
                   })
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               {/* Input bar */}

@@ -182,18 +182,25 @@ export function PublicUserProfile({ profileId }: PublicUserProfileProps) {
 
                 {showActions && (
                   <div className="flex flex-wrap gap-2 rounded-lg border border-white/15 bg-black/20 p-2 backdrop-blur-md">
-                    <Button
-                      onClick={liked ? onUnlike : onLike}
-                      disabled={actionLoading || (!liked && !currentUserHasProfilePicture)}
-                      className="bg-white text-black hover:bg-white/90"
-                    >
-                      {actionLoading ? (
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                      ) : (
-                        <Heart className={`mr-2 size-4 ${liked ? "fill-current" : ""}`} />
-                      )}
-                      {liked ? "Unlike" : "Like"}
-                    </Button>
+                    {isMatched && liked ? (
+                      <Button disabled className="bg-white text-black opacity-90">
+                        <Heart className="mr-2 size-4 fill-current" />
+                        Matched
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={liked ? onUnlike : onLike}
+                        disabled={actionLoading || (!liked && !currentUserHasProfilePicture)}
+                        className="bg-white text-black hover:bg-white/90"
+                      >
+                        {actionLoading ? (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : (
+                          <Heart className={`mr-2 size-4 ${liked ? "fill-current" : ""}`} />
+                        )}
+                        {liked ? "Unlike" : "Like"}
+                      </Button>
+                    )}
                     {isMatched && (
                       <Button variant="secondary" onClick={onMessage} disabled={actionLoading}>
                         <MessageCircle className="mr-2 size-4" />

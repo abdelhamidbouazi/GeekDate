@@ -69,6 +69,10 @@ function getBooleanField(record: unknown, camel: string, pascal: string): boolea
   return Boolean(item[camel] ?? item[pascal])
 }
 
+function isMatchedProfile(profile: ApiUser): boolean {
+  return getBooleanField(profile, "isMatched", "IsMatched")
+}
+
 function calculateAgeFromDate(dateString: string): number | null {
   const date = new Date(dateString)
   if (Number.isNaN(date.getTime())) return null
@@ -111,8 +115,15 @@ export async function unlikeProfile(userId: string) {
 
 export async function getReceivedLikes(): Promise<ProfileSummary[]> {
   const direct = await getDirectProfileSummaryList(endpoints.users.profileLikes).catch(() => [])
-  if (direct.length > 0) return direct
-  return getProfilesByLikeStatus((profile) => getBooleanField(profile, "isLikedByThem", "IsLikedByThem"))
+  if (direct.length > 0) {
+    return filterMatchedSummaries(
+      direct,
+      (profile) => getBooleanField(profile, "isLikedByThem", "IsLikedByThem")
+    )
+  }
+  return getProfilesByLikeStatus(
+    (profile) => getBooleanField(profile, "isLikedByThem", "IsLikedByThem") && !isMatchedProfile(profile)
+  )
 }
 
 export async function getMatches(): Promise<ProfileSummary[]> {
@@ -130,8 +141,33 @@ export async function getMatches(): Promise<ProfileSummary[]> {
 
 export async function getGivenLikes(): Promise<ProfileSummary[]> {
   const direct = await getDirectProfileSummaryList(endpoints.users.likesGiven).catch(() => [])
-  if (direct.length > 0) return direct
-  return getProfilesByLikeStatus((profile) => getBooleanField(profile, "isLikedByMe", "IsLikedByMe"))
+  if (direct.length > 0) {
+    return filterMatchedSummaries(
+      direct,
+      (profile) => getBooleanField(profile, "isLikedByMe", "IsLikedByMe")
+    )
+  }
+  return getProfilesByLikeStatus(
+    (profile) => getBooleanField(profile, "isLikedByMe", "IsLikedByMe") && !isMatchedProfile(profile)
+  )
+}
+
+async function filterMatchedSummaries(
+  profiles: ProfileSummary[],
+  predicate: (profile: ApiUser) => boolean
+): Promise<ProfileSummary[]> {
+  const currentUserId = getCurrentUserIdFromToken()
+  if (!currentUserId) return []
+
+  const summaries = await Promise.all(
+    profiles.map(async (summary) => {
+      const profile = await getPublicUserProfile(summary.id).catch(() => null)
+      if (!profile || !predicate(profile) || isMatchedProfile(profile)) return null
+      return summary
+    })
+  )
+
+  return summaries.filter((profile): profile is ProfileSummary => Boolean(profile?.id))
 }
 
 async function getProfilesByLikeStatus(

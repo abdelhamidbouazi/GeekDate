@@ -134,6 +134,10 @@ export function usePublicProfilePage(userId: string) {
       toast.error("You cannot unlike your own profile.")
       return
     }
+    if (likeInfo?.isMatched) {
+      toast.error("Matched profiles can't be unliked.")
+      return
+    }
     setActionLoading(true)
     try {
       await browseApi.unlikeProfile(userId)
@@ -152,7 +156,7 @@ export function usePublicProfilePage(userId: string) {
     } finally {
       setActionLoading(false)
     }
-  }, [userId, actionLoading, currentUserId])
+  }, [userId, actionLoading, currentUserId, likeInfo])
 
   const handleMessage = useCallback(async () => {
     if (!userId || actionLoading) return

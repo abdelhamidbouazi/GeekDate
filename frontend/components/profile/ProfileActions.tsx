@@ -38,7 +38,12 @@ export function ProfileActions({
       ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {relationship.likedByMe ? (
+        {relationship.connected ? (
+          <Button variant="outline" disabled>
+            <Unlink className="size-4" />
+            Matched
+          </Button>
+        ) : relationship.likedByMe ? (
           <Button variant="outline" onClick={onUnlike}>
             <Unlink className="size-4" />
             Unlike / disconnect
