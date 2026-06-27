@@ -1,13 +1,13 @@
-﻿using matcha.Application.Helper;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Domain.Entities;
-using matcha.Infrastructure.Helpers;
-using matcha.Infrastructure.ReposUsingCustomQueryBuilder;
+﻿using sparkdates.Application.Helper;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Domain.Entities;
+using sparkdates.Infrastructure.Helpers;
+using sparkdates.Infrastructure.ReposUsingCustomQueryBuilder;
 using Microsoft.Data.SqlClient;
 using System.Linq.Expressions;
 
-namespace matcha.Infrastructure.Repositories
+namespace sparkdates.Infrastructure.Repositories
 {
     public class ConfirmEmailTokenRepositoryAsync : GenericRepoAsync<ConfirmEmailToken>, IConfirmEmailTokenRepositoryAsync
     {

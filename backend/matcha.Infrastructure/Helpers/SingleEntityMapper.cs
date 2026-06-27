@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Reflection;
 
-namespace matcha.Infrastructure.Helpers
+namespace sparkdates.Infrastructure.Helpers
 {
     public class SingleEntityMapper
     {

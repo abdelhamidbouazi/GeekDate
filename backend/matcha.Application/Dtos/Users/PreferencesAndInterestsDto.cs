@@ -1,7 +1,7 @@
-﻿using matcha.Domain.Common.Enums;
+﻿using sparkdates.Domain.Common.Enums;
 using Microsoft.AspNetCore.Http;
 
-namespace matcha.Application.Dtos.Users
+namespace sparkdates.Application.Dtos.Users
 {
     public class PreferencesAndInterestsDto
     {

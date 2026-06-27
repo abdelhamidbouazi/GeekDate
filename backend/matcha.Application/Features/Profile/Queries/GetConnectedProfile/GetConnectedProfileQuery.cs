@@ -1,10 +1,10 @@
-﻿using matcha.Application.Dtos.Profile;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.Profile;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Profile.Queries.GetConnectedProfile
+namespace sparkdates.Application.Features.Profile.Queries.GetConnectedProfile
 {
     public class GetConnectedProfileQuery : IRequest<Response<ConnectedUserProfileDto>>
     {

@@ -6,10 +6,12 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { Filter, Heart } from "lucide-react"
+import { BRAND } from "@/lib/branding"
 
 const pageNames: Record<string, string> = {
   "/browse": "Browse",
   "/matches": "Matches",
+  "/likes": "Likes",
   "/messages": "Messages",
   "/profile-views": "Profile Views",
   "/profile": "My Profile",
@@ -22,7 +24,7 @@ export type SiteHeaderProps = {
 
 export function SiteHeader({ onFiltersOpen }: SiteHeaderProps = {}) {
   const pathname = usePathname()
-  const pageName = pageNames[pathname] || "MatchDate"
+  const pageName = pageNames[pathname] || BRAND.name
   const showFilters = pathname === "/browse" && onFiltersOpen
 
   return (
@@ -39,7 +41,7 @@ export function SiteHeader({ onFiltersOpen }: SiteHeaderProps = {}) {
           </span>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary/70">
-              MatchDate
+              {BRAND.name}
             </p>
             <h1 className="text-base font-black tracking-tight">{pageName}</h1>
           </div>
@@ -64,7 +66,7 @@ export function SiteHeader({ onFiltersOpen }: SiteHeaderProps = {}) {
             className="hidden rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary sm:flex"
           >
             <a
-              href="https://github.com/abdelhamidbouazi/GeekDate"
+              href="https://github.com/abdelhamidbouazi/SparkDates"
               rel="noopener noreferrer"
               target="_blank"
               className="dark:text-foreground"

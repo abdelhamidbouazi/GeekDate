@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Users.Commands.LikeUser
+namespace sparkdates.Application.Features.Users.Commands.LikeUser
 {
     public class LikeUserCommand : IRequest<Response<string>>
     {

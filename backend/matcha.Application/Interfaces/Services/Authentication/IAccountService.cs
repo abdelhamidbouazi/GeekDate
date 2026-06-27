@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.AccountDtos;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.AccountDtos;
+using sparkdates.Application.ResponseWrappers;
 using System.Security.Claims;
 
-namespace matcha.Application.Interfaces.Services.Authentication
+namespace sparkdates.Application.Interfaces.Services.Authentication
 {
     public interface IAccountService
     {

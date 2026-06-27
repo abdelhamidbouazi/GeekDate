@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.PhotoDtos
+﻿namespace sparkdates.Application.Dtos.PhotoDtos
 {
     public class ImageUploadResultDto
     {

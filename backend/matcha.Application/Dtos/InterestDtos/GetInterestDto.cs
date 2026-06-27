@@ -1,6 +1,6 @@
-﻿using matcha.Application.Dtos.Users;
+﻿using sparkdates.Application.Dtos.Users;
 
-namespace matcha.Application.Dtos.InterestDtos
+namespace sparkdates.Application.Dtos.InterestDtos
 {
     public class GetInterestDto
     {

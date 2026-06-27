@@ -54,7 +54,7 @@ clean-data:
 	@echo "All data (volumes) removed."
 
 help:
-	@echo "Matcha Local Development - Makefile targets"
+	@echo "SparkDates Local Development - Makefile targets"
 	@echo ""
 	@echo "  make up           - Start stack (build + run in background)"
 	@echo "  make down         - Stop stack"

@@ -1,4 +1,4 @@
-﻿namespace matcha.Shared.Constants
+﻿namespace sparkdates.Shared.Constants
 {
     public static class RegexConstants
     {

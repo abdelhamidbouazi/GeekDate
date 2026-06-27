@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.Interests;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Dtos.Interests;
+using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IInterestRepositoryAsync : IGenericRepoAsync<Interest>
     {

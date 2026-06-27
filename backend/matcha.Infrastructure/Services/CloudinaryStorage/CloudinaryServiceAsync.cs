@@ -1,11 +1,11 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using matcha.Application.Dtos.PhotoDtos;
-using matcha.Application.Interfaces.Services.Cloudinary;
+using sparkdates.Application.Dtos.PhotoDtos;
+using sparkdates.Application.Interfaces.Services.Cloudinary;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace matcha.Infrastructure.Services.CloudinaryStorage
+namespace sparkdates.Infrastructure.Services.CloudinaryStorage
 {
     public class CloudinaryServiceAsync : ICloudinaryServiceAsync
     {
@@ -26,7 +26,7 @@ namespace matcha.Infrastructure.Services.CloudinaryStorage
                 {
                     File = new FileDescription(file.FileName, stream),
                     Transformation = new Transformation().Height(500).Width(500).Crop("fill").Gravity("face"),
-                    Folder = "matcha"
+                    Folder = "sparkdates"
                 };
 
                 uploadResult = await _cloudinary.UploadAsync(uploadParams);

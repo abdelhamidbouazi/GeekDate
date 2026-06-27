@@ -1,6 +1,6 @@
-﻿using matcha.Application.Dtos.UserBlocks;
+﻿using sparkdates.Application.Dtos.UserBlocks;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IUserBlocksServiceAsync
     {

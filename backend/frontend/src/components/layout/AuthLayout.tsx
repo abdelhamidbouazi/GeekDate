@@ -22,7 +22,7 @@ export default function AuthLayout() {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 flex flex-col items-center justify-center p-4">
       <div className="mb-6 flex items-center gap-2 text-primary">
         <Heart className="w-10 h-10 fill-primary" />
-        <span className="text-3xl font-bold">Matcha</span>
+        <span className="text-3xl font-bold">SparkDates</span>
       </div>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <Outlet />

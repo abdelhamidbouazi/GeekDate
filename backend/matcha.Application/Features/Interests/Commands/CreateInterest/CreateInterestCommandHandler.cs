@@ -1,9 +1,9 @@
-﻿using matcha.Application.Dtos.InterestDtos;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.InterestDtos;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Interests.Commands.CreateInterest
+namespace sparkdates.Application.Features.Interests.Commands.CreateInterest
 {
     public class CreateInterestCommandHandler : IRequestHandler<CreateInterestCommand, Response<InterestDto>>
     {

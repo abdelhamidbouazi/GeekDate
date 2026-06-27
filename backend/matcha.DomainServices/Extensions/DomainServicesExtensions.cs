@@ -1,15 +1,15 @@
-﻿using matcha.Application.Interfaces.Services;
-using matcha.DomainServices.Chat;
-using matcha.DomainServices.Services.InterestService;
-using matcha.DomainServices.Services.Message;
-using matcha.DomainServices.Services.UserInterestsService;
-using matcha.DomainServices.Services.UserSearchPreferencesService;
-using matcha.DomainServices.Services.UserService;
-using matcha.DomainServices.UserPresence;
+﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.DomainServices.Chat;
+using sparkdates.DomainServices.Services.InterestService;
+using sparkdates.DomainServices.Services.Message;
+using sparkdates.DomainServices.Services.UserInterestsService;
+using sparkdates.DomainServices.Services.UserSearchPreferencesService;
+using sparkdates.DomainServices.Services.UserService;
+using sparkdates.DomainServices.UserPresence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.DomainServices.Extensions
+namespace sparkdates.DomainServices.Extensions
 {
     public static class DomainServicesExtensions
     {

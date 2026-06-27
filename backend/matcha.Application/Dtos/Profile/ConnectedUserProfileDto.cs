@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.Interests;
-using matcha.Domain.Common.Enums;
+﻿using sparkdates.Application.Dtos.Interests;
+using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Application.Dtos.Profile
+namespace sparkdates.Application.Dtos.Profile
 {
     public class ConnectedUserProfileDto
     {

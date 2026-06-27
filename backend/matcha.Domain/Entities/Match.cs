@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace matcha.Domain.Entities
+namespace sparkdates.Domain.Entities
 {
     [Table("Matches")]
     public class Match : EntityBase

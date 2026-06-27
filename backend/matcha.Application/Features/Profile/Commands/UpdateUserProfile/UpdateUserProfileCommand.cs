@@ -1,9 +1,9 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.ResponseWrappers;
-using matcha.Domain.Common.Enums;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Domain.Common.Enums;
 using MediatR;
 
-namespace matcha.Application.Features.Profile.Commands.UpdateUserProfile
+namespace sparkdates.Application.Features.Profile.Commands.UpdateUserProfile
 {
     public class UpdateUserProfileCommand : IRequest<Response<UserProfileDto>>
     {

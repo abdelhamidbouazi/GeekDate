@@ -7,13 +7,16 @@ import {
   resolveProfileMediaUrl,
   profileViewerDisplayName,
   type AppUser,
+  type ProfileSummaryUser,
   type ProfileViewerUser,
 } from "@/lib/services/profile-api"
+import { toast } from "sonner"
 
 export function useMyProfile() {
   const [user, setUser] = useState<AppUser | null>(null)
   const [profileViews, setProfileViews] = useState<ProfileViewerUser[]>([])
-  const [profileLikes, setProfileLikes] = useState<ProfileViewerUser[]>([])
+  const [profileLikes, setProfileLikes] = useState<ProfileSummaryUser[]>([])
+  const [mutualMatches, setMutualMatches] = useState<ProfileSummaryUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -36,12 +39,14 @@ export function useMyProfile() {
   const fetchActivity = useCallback(async () => {
     if (!userId) return
     try {
-      const [views, likes] = await Promise.all([
+      const [views, likes, matches] = await Promise.all([
         profileApi.getProfileViews().catch(() => []),
-        profileApi.getProfileLikes().catch(() => []),
+        profileApi.getLikesReceived().catch(() => []),
+        profileApi.getMatches().catch(() => []),
       ])
       setProfileViews(Array.isArray(views) ? views : [])
       setProfileLikes(Array.isArray(likes) ? likes : [])
+      setMutualMatches(Array.isArray(matches) ? matches : [])
     } catch {
       // ignore
     }
@@ -76,6 +81,7 @@ export function useMyProfile() {
     try {
       await profileApi.uploadImage(file)
       await fetchProfile()
+      toast.success("Photo uploaded")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload photo")
     } finally {
@@ -89,6 +95,7 @@ export function useMyProfile() {
     try {
       await profileApi.setMainPhoto(photoId, userId)
       await fetchProfile()
+      toast.success("Main photo updated")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set main photo")
     }
@@ -100,6 +107,7 @@ export function useMyProfile() {
       await profileApi.deletePhoto(photoId)
       await fetchProfile()
       setSelectedPhotoIndex(0)
+      toast.success("Photo deleted")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete photo")
     }
@@ -128,6 +136,7 @@ export function useMyProfile() {
     user,
     profileViews,
     profileLikes,
+    mutualMatches,
     loading,
     error,
     isEditing,
@@ -138,6 +147,7 @@ export function useMyProfile() {
     fileInputRef,
     userId,
     fetchProfile,
+    fetchActivity,
     handleUploadPhoto,
     handleSetMainPhoto,
     handleDeletePhoto,

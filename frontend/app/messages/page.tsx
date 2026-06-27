@@ -27,6 +27,7 @@ import {
   resolveProfileMediaUrl,
   type ProfileViewerUser,
 } from "@/lib/services/profile-api"
+import { getApiOrigin } from "@/lib/api/http"
 import { AVATAR_PLACEHOLDER_SMALL } from "@/lib/utils/profile"
 import { cn } from "@/lib/utils"
 import {
@@ -147,21 +148,11 @@ export default function MessagesPage() {
     if (!currentUserId) return
     setMatchedLoading(true)
     try {
-      const likedOrMatched = await profileApi.getProfileLikes()
-      const unique = likedOrMatched.filter(
+      const matches = await profileApi.getMatches()
+      const unique = matches.filter(
         (u, i, arr) => u.id && arr.findIndex((x) => x.id === u.id) === i
       )
-      const checks = await Promise.all(
-        unique.map(async (u) => {
-          try {
-            const info = await profileApi.getUserLikeInfo(u.id)
-            return info.isMatched ? u : null
-          } catch {
-            return null
-          }
-        })
-      )
-      setMatchedUsers(checks.filter((u): u is ProfileViewerUser => Boolean(u)))
+      setMatchedUsers(unique)
     } catch {
       setMatchedUsers([])
     } finally {
@@ -204,8 +195,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (!currentUserId || typeof window === "undefined") return
-    const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "")
-    const hubUrl = `${base}/chatHub`
+    const hubUrl = `${getApiOrigin()}/chatHub`
     const accessTokenFactory = () => localStorage.getItem("accessToken") ?? ""
     const conn = new HubConnectionBuilder()
       .withUrl(hubUrl, { accessTokenFactory })

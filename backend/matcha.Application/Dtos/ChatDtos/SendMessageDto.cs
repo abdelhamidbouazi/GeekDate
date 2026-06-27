@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.ChatDtos
+﻿namespace sparkdates.Application.Dtos.ChatDtos
 {
     public class SendMessageDto
     {

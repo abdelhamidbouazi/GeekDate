@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Common.Enums;
+﻿using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Application.Dtos.Users
+namespace sparkdates.Application.Dtos.Users
 {
     public class PersonalDetailsDto
     {

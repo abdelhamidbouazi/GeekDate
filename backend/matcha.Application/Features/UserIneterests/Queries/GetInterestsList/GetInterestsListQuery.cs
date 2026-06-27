@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.InterestDtos;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.ResponseWrappers;
+using sparkdates.Application.Dtos.InterestDtos;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.UserIneterests.Queries.GetInterestsList
+namespace sparkdates.Application.Features.UserIneterests.Queries.GetInterestsList
 {
     public class GetInterestsListQuery : IRequest<Response<List<InterestDto>>>
     {

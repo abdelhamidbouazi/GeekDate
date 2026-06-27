@@ -1,13 +1,14 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Features.Profile.Commands.CompleteUserPreferences;
-using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
-using matcha.Application.Features.Profile.Queries.GetConnectedProfile;
-using matcha.Application.Features.Users.Commands.CompleteUserProfile;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Features.Profile.Commands.CompleteUserPreferences;
+using sparkdates.Application.Features.Profile.Commands.SetUserLocation;
+using sparkdates.Application.Features.Profile.Commands.UpdateUserProfile;
+using sparkdates.Application.Features.Profile.Queries.GetConnectedProfile;
+using sparkdates.Application.Features.Users.Commands.CompleteUserProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
     public class UserProfileController : BaseApiController
     {
@@ -37,6 +38,13 @@ namespace matcha.API.Controllers
         {
             //request.Pictures = pictures;
             return Ok(await _mediator.Send(request));
+        }
+
+        [Authorize]
+        [HttpPost("set-location")]
+        public async Task<ActionResult> SetLocation([FromBody] SetUserLocationCommand command)
+        {
+            return Ok(await _mediator.Send(command));
         }
 
         [Authorize]

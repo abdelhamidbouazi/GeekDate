@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.UserInterestsDtos;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.UserInterestsDtos;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.UserIneterests.Commands.CreateUserInterest
+namespace sparkdates.Application.Features.UserIneterests.Commands.CreateUserInterest
 {
     public class CreateUserInterestCommand : IRequest<Response<UserInterestDto>>
     {

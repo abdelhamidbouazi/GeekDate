@@ -1,4 +1,11 @@
 import { api } from "./api";
+import { endpoints } from "@/lib/api/endpoints";
+import {
+  createConversation,
+  deleteConversation,
+  getConversationWith,
+  getConversations,
+} from "@/lib/api/conversations";
 
 export interface Message {
   id: string;
@@ -17,6 +24,29 @@ export interface Conversation {
   user2Id: string;
   createdAt: string;
   unreadCount?: number;
+}
+
+function normalizeMessage(raw: unknown): Message | null {
+  if (!raw || typeof raw !== "object") return null;
+  const item = raw as Record<string, unknown>;
+  const id = item.id ?? item.Id;
+  const senderId = item.senderId ?? item.SenderId;
+  const receiverId = item.receiverId ?? item.ReceiverId;
+  const conversationId = item.conversationId ?? item.ConversationId;
+  if (!id || !senderId || !receiverId || !conversationId) return null;
+  return {
+    id: String(id),
+    senderId: String(senderId),
+    receiverId: String(receiverId),
+    messageText: String(item.messageText ?? item.MessageText ?? ""),
+    sentAt: String(item.sentAt ?? item.SentAt ?? new Date().toISOString()),
+    isRead: Boolean(item.isRead ?? item.IsRead ?? false),
+    conversationId: String(conversationId),
+    updatedAt:
+      item.updatedAt != null || item.UpdatedAt != null
+        ? String(item.updatedAt ?? item.UpdatedAt)
+        : undefined,
+  };
 }
 
 function unwrap<T>(r: { data?: T; Data?: T }): T | undefined {
@@ -46,56 +76,54 @@ export function parseConversationMessagesJson(raw: unknown): {
   const o = inner as Record<string, unknown>;
   const messagesWrapper = (o.messages ?? o.Messages) as Record<string, unknown> | undefined;
   const pageData = messagesWrapper?.data ?? messagesWrapper?.Data;
-  const messages = Array.isArray(pageData) ? (pageData as Message[]) : [];
+  const messages = Array.isArray(pageData)
+    ? pageData.map(normalizeMessage).filter((message): message is Message => Boolean(message))
+    : [];
   const isBlocked = Boolean(o.isBlocked ?? o.IsBlocked);
   return { messages, isBlocked };
 }
 
 export const chatApi = {
   getConversations: async () => {
-    const r = await api.get<{ data?: Conversation[]; Data?: Conversation[] }>(
-      "/api/Conversation"
-    );
-    const arr = unwrap(r);
-    return Array.isArray(arr) ? arr : [];
+    return getConversations() as Promise<Conversation[]>;
   },
 
   getConversationWith: (userId: string) =>
-    api.get<Conversation>(`/api/Conversation/with/${userId}`),
+    getConversationWith(userId) as Promise<Conversation>,
 
   createConversation: (userId: string) =>
-    api.post<Conversation>(`/api/Conversation/with/${userId}`, {}),
+    createConversation(userId) as Promise<Conversation>,
 
   deleteConversation: (conversationId: string) =>
-    api.delete<void>(`/api/Conversation/${conversationId}`),
+    deleteConversation(conversationId),
 
   getMessages: async (conversationId: string, pageNumber = 1, pageSize = 20) => {
     const raw = await api.get<unknown>(
-      `/api/Chat/conversations/${conversationId}/messages?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      `${endpoints.chat.messages(conversationId)}?pageNumber=${pageNumber}&pageSize=${pageSize}`
     );
     return parseConversationMessagesJson(raw);
   },
 
   sendMessage: async (receiverId: string, messageText: string) => {
-    const r = await api.post<{ data?: Message; Data?: Message }>("/api/Chat/send-message", {
+    const r = await api.post<{ data?: Message; Data?: Message }>(endpoints.chat.sendMessage, {
       receiverId,
       messageText,
     });
-    return unwrap(r);
+    return normalizeMessage(unwrap(r));
   },
 
   updateMessage: (messageId: string, messageText: string) =>
-    api.put(`/api/Chat/messages/${messageId}`, { messageText }),
+    api.put(endpoints.chat.updateMessage(messageId), { messageText }),
 
   deleteMessage: (messageId: string) =>
-    api.delete(`/api/Chat/messages/${messageId}`),
+    api.delete(endpoints.chat.deleteMessage(messageId)),
 
   markAsRead: (conversationId: string) =>
-    api.put(`/api/Chat/conversations/${conversationId}/mark-read`, {}),
+    api.put(endpoints.chat.markRead(conversationId), {}),
 
   getUnreadCount: async (conversationId: string) => {
     const r = await api.get<{ data?: number; Data?: number }>(
-      `/api/Chat/conversations/${conversationId}/unread-count`
+      endpoints.chat.unreadCount(conversationId)
     );
     return unwrap(r) ?? 0;
   },

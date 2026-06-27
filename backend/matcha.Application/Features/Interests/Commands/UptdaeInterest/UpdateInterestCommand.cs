@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.InterestDtos;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.InterestDtos;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Interests.Commands.UptdaeInterest
+namespace sparkdates.Application.Features.Interests.Commands.UptdaeInterest
 {
     public class UpdateInterestCommand : IRequest<Response<bool>>
     {

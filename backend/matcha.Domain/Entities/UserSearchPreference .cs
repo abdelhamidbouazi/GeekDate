@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace matcha.Domain.Entities
+namespace sparkdates.Domain.Entities
 {
     public class UserSearchPreference
     {

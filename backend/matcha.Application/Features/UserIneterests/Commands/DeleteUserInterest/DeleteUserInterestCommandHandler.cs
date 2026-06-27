@@ -1,8 +1,8 @@
-﻿using matcha.Application.Interfaces.Services;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.UserIneterests.Commands.DeleteUserInterest
+namespace sparkdates.Application.Features.UserIneterests.Commands.DeleteUserInterest
 {
     public class DeleteUserInterestCommandHandler : IRequestHandler<DeleteUserInterestCommand, Response<bool>>
     {

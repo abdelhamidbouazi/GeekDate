@@ -4,6 +4,7 @@
  */
 import type { Filters, Interest } from "@/features/browse/components/filter-sidebar"
 import type { BrowseUserDto, GetInterestsDto } from "@/lib/services/browse-api"
+import { resolveProfileMediaUrl } from "@/lib/services/profile-api"
 
 export const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Crect fill='%23999' width='400' height='600'/%3E%3Ctext fill='%23fff' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24'%3ENo photo%3C/text%3E%3C/svg%3E"
@@ -40,13 +41,17 @@ export function mapBrowseUserToProfile(
     dto.distanceInMeters >= 0 ? `${distanceKm} km away` : "Distance unknown"
   const match = Math.min(100, (dto.commonTagsCount ?? 0) * 25)
 
+  const rawPicture =
+    dto.profilePicture ??
+    (dto as BrowseUserDto & { ProfilePicture?: string | null }).ProfilePicture
+
   return {
     id: dto.id,
     name: [dto.firstName, dto.lastName].filter(Boolean).join(" ") || "Unknown",
     age: dto.age ?? 0,
     role: "Member",
     location,
-    image: dto.profilePicture ?? PLACEHOLDER_IMAGE,
+    image: resolveProfileMediaUrl(rawPicture ?? null),
     tags,
     bio: "",
     match,

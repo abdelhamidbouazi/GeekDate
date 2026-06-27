@@ -1,11 +1,11 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace matcha.API.Controllers
+namespace sparkdates.API.Controllers
 {
 
 
@@ -28,7 +28,7 @@ namespace matcha.API.Controllers
             return Ok(user);
         }
 
-        [HttpGet("{userId}")]
+        [HttpGet("{userId:Guid}")]
         public async Task<ActionResult> GetUserByUserId(Guid userId)
         {
             var user = await userServiceAsync.GetUserByIdAsync(userId);
@@ -156,6 +156,14 @@ namespace matcha.API.Controllers
         public async Task<ActionResult> GetProfileLikes()
         {
             var result = await userServiceAsync.GetWhoLikedMeAsync(authenticatedUser.UserId);
+
+            return Ok(result);
+        }
+
+        [HttpGet("likes-given")]
+        public async Task<ActionResult> GetLikesGiven()
+        {
+            var result = await userServiceAsync.GetLikesGivenAsync(authenticatedUser.UserId);
 
             return Ok(result);
         }

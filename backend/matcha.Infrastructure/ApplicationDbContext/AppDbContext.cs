@@ -1,8 +1,8 @@
-﻿using matcha.Domain.Entities;
-using matcha.Infrastructure.EntitiesConfiguration;
+﻿using sparkdates.Domain.Entities;
+using sparkdates.Infrastructure.EntitiesConfiguration;
 using Microsoft.EntityFrameworkCore;
 
-namespace matcha.Infrastructure.ApplicationDbContext
+namespace sparkdates.Infrastructure.ApplicationDbContext
 {
     public class AppDbContext : DbContext
     {

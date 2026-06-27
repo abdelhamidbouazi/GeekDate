@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Users.Commands.BlockUser
+namespace sparkdates.Application.Features.Users.Commands.BlockUser
 {
     public class BlockUserCommand : IRequest<Response<string>>
     {

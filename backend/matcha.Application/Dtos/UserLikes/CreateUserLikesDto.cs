@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.UserLikes
+﻿namespace sparkdates.Application.Dtos.UserLikes
 {
     public class CreateUserLikesDto
     {

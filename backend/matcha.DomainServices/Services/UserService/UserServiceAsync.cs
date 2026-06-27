@@ -1,18 +1,18 @@
-﻿using matcha.Application.Dtos.PhotoDtos;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.Interfaces.Services.Cloudinary;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Common.Enums;
-using matcha.Domain.Entities;
-using matcha.Shared.Constants;
+﻿using sparkdates.Application.Dtos.PhotoDtos;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.Interfaces.Services.Cloudinary;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Common.Enums;
+using sparkdates.Domain.Entities;
+using sparkdates.Shared.Constants;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
-namespace matcha.DomainServices.Services.UserService
+namespace sparkdates.DomainServices.Services.UserService
 {
     public class UserServiceAsync : IUserServiceAsync
     {
@@ -543,27 +543,52 @@ namespace matcha.DomainServices.Services.UserService
             return (isLikedByMe, isLikedByThem, like.IsMatched);
         }
 
-        public async Task<IEnumerable<UserDto>> GetWhoLikedMeAsync(Guid UserId)
+        public async Task<IEnumerable<UserProfileLikedDto>> GetWhoLikedMeAsync(Guid UserId)
         {
             var likes = await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>()
                 .GetAllAsync(x => x.LikedUserId == UserId || (x.LikerUserId == UserId && x.IsMatched == true));
 
-            var result = new List<UserDto>();
+            var result = new List<UserProfileLikedDto>();
 
             foreach (var like in likes.OrderByDescending(l => l.LikedAt))
             {
                 var likeOwnerId = _authenticatedUser.UserId == like.LikerUserId && like.IsMatched ? like.LikedUserId : like.LikerUserId;
                 var user = await GetUserByIdAsync(likeOwnerId);
-                result.Add(new UserDto
-                {
-                    UserName = user.UserName,
-                    PictureUrl = user.Photos
-                        .Where(p => p.IsMain)
-                        .Select(p => p.Url)
-                        .FirstOrDefault()
-                });
+                result.Add(MapUserToLikedProfileDto(user));
             }
             return result;
+        }
+
+        public async Task<IEnumerable<UserProfileLikedDto>> GetLikesGivenAsync(Guid userId)
+        {
+            var likes = await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>()
+                .GetAllAsync(x => x.LikerUserId == userId || (x.LikedUserId == userId && x.IsMatched == true));
+
+            var result = new List<UserProfileLikedDto>();
+
+            foreach (var like in likes.OrderByDescending(l => l.LikedAt))
+            {
+                var likedUserId = userId == like.LikedUserId && like.IsMatched ? like.LikerUserId : like.LikedUserId;
+                var user = await GetUserByIdAsync(likedUserId);
+                result.Add(MapUserToLikedProfileDto(user));
+            }
+
+            return result;
+        }
+
+        private static UserProfileLikedDto MapUserToLikedProfileDto(AppUser user)
+        {
+            return new UserProfileLikedDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Age = user.DateOfBirth.HasValue ? DateTime.UtcNow.Year - user.DateOfBirth.Value.Year : null,
+                ProfilePicture = user.Photos
+                    .Where(p => p.IsMain)
+                    .Select(p => p.Url)
+                    .FirstOrDefault()
+            };
         }
 
     }

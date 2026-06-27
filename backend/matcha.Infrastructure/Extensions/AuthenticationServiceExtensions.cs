@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace matcha.Infrastructure.Extensions
+namespace sparkdates.Infrastructure.Extensions
 {
     public static class AuthenticationServiceExtensions
     {

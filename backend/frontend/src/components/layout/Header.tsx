@@ -22,7 +22,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-primary font-bold text-xl no-underline">
           <Heart className="w-6 h-6 fill-primary" />
-          Matcha
+          SparkDates
         </Link>
 
         {/* Desktop Nav */}

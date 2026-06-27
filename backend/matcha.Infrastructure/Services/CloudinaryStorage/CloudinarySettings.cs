@@ -1,4 +1,4 @@
-﻿namespace matcha.Infrastructure.Services.CloudinaryStorage
+﻿namespace sparkdates.Infrastructure.Services.CloudinaryStorage
 {
     public class CloudinarySettings
     {

@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.Users
+﻿namespace sparkdates.Application.Dtos.Users
 {
     public class UpdateUserProfileDto
     {

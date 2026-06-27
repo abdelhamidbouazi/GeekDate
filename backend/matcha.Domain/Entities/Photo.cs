@@ -1,4 +1,4 @@
-﻿namespace matcha.Domain.Entities
+﻿namespace sparkdates.Domain.Entities
 {
     public class Photo : EntityBase
     {

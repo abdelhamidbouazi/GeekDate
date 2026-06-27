@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.UserBlocks;
-using matcha.Application.Dtos.UserLikes;
+﻿using sparkdates.Application.Dtos.UserBlocks;
+using sparkdates.Application.Dtos.UserLikes;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IUserLikesServiceAsync
     {

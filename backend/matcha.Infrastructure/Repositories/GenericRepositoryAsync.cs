@@ -1,10 +1,10 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Infrastructure.ApplicationDbContext;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Infrastructure.ApplicationDbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
 
-namespace matcha.Infrastructure.Repositories
+namespace sparkdates.Infrastructure.Repositories
 {
     public abstract class GenericRepositoryAsync<T> : IGenericRepositoryAsync<T> where T : class
     {

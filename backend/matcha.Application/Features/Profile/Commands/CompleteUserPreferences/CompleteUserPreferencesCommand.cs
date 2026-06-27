@@ -1,10 +1,10 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.ResponseWrappers;
-using matcha.Domain.Common.Enums;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.ResponseWrappers;
+using sparkdates.Domain.Common.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 
-namespace matcha.Application.Features.Profile.Commands.CompleteUserPreferences
+namespace sparkdates.Application.Features.Profile.Commands.CompleteUserPreferences
 {
     public class CompleteUserPreferencesCommand : IRequest<Response<UserProfileDto>>
     {
@@ -13,7 +13,7 @@ namespace matcha.Application.Features.Profile.Commands.CompleteUserPreferences
         public SexualPreferences PreferredGender { get; set; }
         public List<Guid> UserInterestIds { get; set; }
         public Gender Gender { get; set; }
-        public IEnumerable<IFormFile> Pictures { get; set; }
+        public IEnumerable<IFormFile>? Pictures { get; set; }
     }
     public class UserPicture
     {

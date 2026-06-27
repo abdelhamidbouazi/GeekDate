@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.ResponseWrappers
+﻿namespace sparkdates.Application.ResponseWrappers
 {
     public class Response<T>
     {

@@ -1,4 +1,4 @@
-﻿namespace matcha.Domain.Common.Enums
+﻿namespace sparkdates.Domain.Common.Enums
 {
     public enum NotificationType
     {

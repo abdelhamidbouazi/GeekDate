@@ -1,6 +1,6 @@
-﻿using matcha.Application.Specifications;
+﻿using sparkdates.Application.Specifications;
 
-namespace matcha.Application.Dtos.Users
+namespace sparkdates.Application.Dtos.Users
 {
     public class SearchPreferencesDto
     {

@@ -1,7 +1,7 @@
-﻿using matcha.Application.Helper;
+﻿using sparkdates.Application.Helper;
 using Microsoft.Data.SqlClient;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IQueryBuilder<T> where T : class
     {

@@ -2,12 +2,14 @@
 
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { authApi } from "@/lib/auth"
 
 function ConfirmEmailContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
+  const [needsLogin, setNeedsLogin] = useState(false)
 
   useEffect(() => {
     async function confirm() {
@@ -19,13 +21,24 @@ function ConfirmEmailContent() {
       }
       try {
         await authApi.confirmEmail(userId, code)
+        const hasSession =
+          typeof window !== "undefined" &&
+          Boolean(localStorage.getItem("accessToken"))
+
+        if (hasSession) {
+          sessionStorage.setItem("emailJustVerified", "1")
+          router.replace("/verify")
+          return
+        }
+
+        setNeedsLogin(true)
         setStatus("success")
       } catch {
         setStatus("error")
       }
     }
     confirm()
-  }, [searchParams])
+  }, [searchParams, router])
 
   return (
     <div className="bg-muted flex min-h-svh items-center justify-center p-6">
@@ -35,9 +48,16 @@ function ConfirmEmailContent() {
       {status === "success" && (
         <div className="flex flex-col items-center gap-4 text-center">
           <p className="text-muted-foreground">Email verified successfully.</p>
-          <Link href="/login" className="text-primary underline underline-offset-4">
-            Go to login
-          </Link>
+          {needsLogin ? (
+            <>
+              <p className="text-muted-foreground text-sm">
+                Sign in to continue setting up your profile.
+              </p>
+              <Link href="/login" className="text-primary underline underline-offset-4">
+                Go to login
+              </Link>
+            </>
+          ) : null}
         </div>
       )}
       {status === "error" && (

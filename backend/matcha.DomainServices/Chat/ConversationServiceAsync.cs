@@ -1,11 +1,11 @@
-﻿using matcha.Application.Exceptions;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Exceptions;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Entities;
 
-namespace matcha.DomainServices.Chat
+namespace sparkdates.DomainServices.Chat
 {
     public class ConversationServiceAsync : IConversationServiceAsync
     {
@@ -43,7 +43,7 @@ namespace matcha.DomainServices.Chat
             var conversation = await conversationRepository.GetConversationBetweenUsersAsync(authenticatedUser.Id, userId);
 
             if (conversation is not null)
-                throw new ApiException("A conversation with this user already exists.");
+                return conversation;
 
             var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(authenticatedUser.Id, userId);
 

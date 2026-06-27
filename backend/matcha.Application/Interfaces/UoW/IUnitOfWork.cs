@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Interfaces.UoW
+﻿namespace sparkdates.Application.Interfaces.UoW
 {
     public interface IUnitOfWork
     {

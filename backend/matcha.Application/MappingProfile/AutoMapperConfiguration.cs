@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.InterestDtos;
-using matcha.Application.Dtos.Profile;
-using matcha.Application.Dtos.UserInterestsDtos;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
-using matcha.Domain.Entities;
+using sparkdates.Application.Dtos.InterestDtos;
+using sparkdates.Application.Dtos.Profile;
+using sparkdates.Application.Dtos.UserInterestsDtos;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Features.Profile.Commands.UpdateUserProfile;
+using sparkdates.Domain.Entities;
 
-namespace matcha.Application.MappingProfile
+namespace sparkdates.Application.MappingProfile
 {
     public class AutoMapperConfiguration : Profile
     {

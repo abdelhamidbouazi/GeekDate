@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Exceptions
+﻿namespace sparkdates.Application.Exceptions
 {
     public class ApiException : Exception
     {

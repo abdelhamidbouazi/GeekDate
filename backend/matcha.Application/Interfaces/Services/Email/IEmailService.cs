@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Interfaces.Services.Email
+﻿namespace sparkdates.Application.Interfaces.Services.Email
 {
     public interface IEmailService
     {

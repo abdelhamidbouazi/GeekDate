@@ -1,22 +1,22 @@
 ﻿using AutoMapper;
-using matcha.Application.Dtos.Profile;
-using matcha.Application.Dtos.UserBlocks;
-using matcha.Application.Dtos.UserLikes;
-using matcha.Application.Dtos.Users;
-using matcha.Application.Exceptions;
-using matcha.Application.Features.Profile.Commands.CompleteUserPreferences;
-using matcha.Application.Features.Profile.Commands.UpdateUserProfile;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Application.Interfaces.Services.Email;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Entities;
+using sparkdates.Application.Dtos.Profile;
+using sparkdates.Application.Dtos.UserBlocks;
+using sparkdates.Application.Dtos.UserLikes;
+using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Exceptions;
+using sparkdates.Application.Features.Profile.Commands.CompleteUserPreferences;
+using sparkdates.Application.Features.Profile.Commands.UpdateUserProfile;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Application.Interfaces.Services.Email;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
 
-namespace matcha.DomainServices.Services.UserService
+namespace sparkdates.DomainServices.Services.UserService
 {
     public class UserProfileService : IUserProfileService
     {
@@ -148,7 +148,8 @@ namespace matcha.DomainServices.Services.UserService
                 user.IsProfileCompleted = user.IsBasicInfoComplete && user.IsPreferencesComplete;
 
                 await _unitOfWork.GetRepository<IUserRepositoryAsync>().Update(_mapper.Map(preferences, user));
-                await UploadUserImagesAsync(userPreferencesDto.Pictures, _authenticatedUser.UserId);
+                if (userPreferencesDto.Pictures is not null && userPreferencesDto.Pictures.Any())
+                    await UploadUserImagesAsync(userPreferencesDto.Pictures, _authenticatedUser.UserId);
 
                 await _unitOfWork.CompleteAsync();
 

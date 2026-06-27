@@ -97,7 +97,7 @@ export default function UserProfilePage() {
   };
 
   const handleReport = () => {
-    showToast('User reported as fake account. Thank you for keeping Matcha safe!');
+    showToast('User reported as fake account. Thank you for keeping SparkDates safe!');
   };
 
   if (loading) return <LoadingSpinner size="lg" />;

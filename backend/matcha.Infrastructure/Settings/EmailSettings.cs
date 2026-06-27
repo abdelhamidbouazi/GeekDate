@@ -1,4 +1,4 @@
-﻿namespace matcha.Infrastructure.Settings
+﻿namespace sparkdates.Infrastructure.Settings
 {
     public class EmailSettings
     {

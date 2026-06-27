@@ -1,5 +1,5 @@
-﻿using matcha.Application.Interfaces.Services.Authentication;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Interfaces.Services.Authentication;
+using sparkdates.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -7,7 +7,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace matcha.Infrastructure.Services.Authentication
+namespace sparkdates.Infrastructure.Services.Authentication
 {
     internal sealed class JwtTokenGenerator : IJwtTokenGenerator
     {

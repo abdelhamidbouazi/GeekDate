@@ -1,10 +1,10 @@
-﻿using matcha.Application.Helper;
-using matcha.Application.Interfaces.Repositories;
+﻿using sparkdates.Application.Helper;
+using sparkdates.Application.Interfaces.Repositories;
 using Microsoft.Data.SqlClient;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
-namespace matcha.Infrastructure.Repositories
+namespace sparkdates.Infrastructure.Repositories
 {
     public class QueryBuilder<T> : IQueryBuilder<T> where T : class
     {
@@ -22,7 +22,12 @@ namespace matcha.Infrastructure.Repositories
         public QueryBuilder()
         {
             _tableTypes.Add(typeof(T));
-            _tableName = typeof(T).Name + "s";
+            _tableName = GetTableName(typeof(T));
+        }
+
+        private static string GetTableName(Type type)
+        {
+            return type.GetCustomAttribute<TableAttribute>()?.Name ?? $"{type.Name}s";
         }
 
         public IQueryBuilder<T> Select(params string[] columns)
@@ -80,10 +85,10 @@ namespace matcha.Infrastructure.Repositories
             {
                 var properties = _table.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(x => IsSimple(x.PropertyType) && x.Name.ToLower() != "id")
-                    .Select(p => $"{_table.Name}s.{p.Name}")
+                    .Select(p => $"{GetTableName(_table)}.{p.Name}")
                     .ToList();
                 if (_table.GetProperty("Id") != null)
-                    properties.Add($"{_table.Name}s.Id as {_table.Name}Id");
+                    properties.Add($"{GetTableName(_table)}.Id as {_table.Name}Id");
                 _query += $"{string.Join(", ", properties)} ,";
             }
             _query = _query.Substring(0, _query.Length - 2);
@@ -142,23 +147,23 @@ namespace matcha.Infrastructure.Repositories
 
         public IQueryBuilder<T> Join<TJoin>(string joinType, string condition, bool includeJoinedProps = false)
         {
-            string joinTableRight = typeof(TJoin).Name;
+            string joinTableRight = GetTableName(typeof(TJoin));
 
             if (!_tableTypes.Contains(typeof(TJoin)) && includeJoinedProps)
                 _tableTypes.Add(typeof(TJoin));
 
-            _join += $" {joinType} JOIN {joinTableRight}s ON {condition} ";
+            _join += $" {joinType} JOIN {joinTableRight} ON {condition} ";
             return this;
         }
 
         public IQueryBuilder<T> InnerJoin<TLeft, TRight>(string tableLeftIdentifier, string tableRightIdentifier, bool includeJoinedProps = false)
-       => Join<TRight>("INNER", $"{typeof(TLeft).Name}s.{tableLeftIdentifier} = {typeof(TRight).Name}s.{tableRightIdentifier}", includeJoinedProps);
+       => Join<TRight>("INNER", $"{GetTableName(typeof(TLeft))}.{tableLeftIdentifier} = {GetTableName(typeof(TRight))}.{tableRightIdentifier}", includeJoinedProps);
 
         public IQueryBuilder<T> LeftJoin<TLeft, TRight>(string tableLeftIdentifier, string tableRightIdentifier, bool includeJoinedProps = false)
-            => Join<TRight>("LEFT", $"{typeof(TLeft).Name}s.{tableLeftIdentifier} = {typeof(TRight).Name}s.{tableRightIdentifier}", includeJoinedProps);
+            => Join<TRight>("LEFT", $"{GetTableName(typeof(TLeft))}.{tableLeftIdentifier} = {GetTableName(typeof(TRight))}.{tableRightIdentifier}", includeJoinedProps);
 
         public IQueryBuilder<T> RightJoin<TLeft, TRight>(string tableLeftIdentifier, string tableRightIdentifier, bool includeJoinedProps = false)
-            => Join<TRight>("RIGHT", $"{typeof(TLeft).Name}s.{tableLeftIdentifier} = {typeof(TRight).Name}s.{tableRightIdentifier}", includeJoinedProps);
+            => Join<TRight>("RIGHT", $"{GetTableName(typeof(TLeft))}.{tableLeftIdentifier} = {GetTableName(typeof(TRight))}.{tableRightIdentifier}", includeJoinedProps);
 
         public IQueryBuilder<T> OrderBy(params string[] columns)
         {
@@ -201,7 +206,7 @@ namespace matcha.Infrastructure.Repositories
                 paramsList.Add($"@{prop.Name}");
             }
 
-            _query = $"INSERT INTO {entity.GetType().Name}s ({columnNames}) VALUES ({string.Join(",", paramsList)})";
+            _query = $"INSERT INTO {GetTableName(entity.GetType())} ({columnNames}) VALUES ({string.Join(",", paramsList)})";
 
             return this;
         }
@@ -209,9 +214,9 @@ namespace matcha.Infrastructure.Repositories
         public IQueryBuilder<T> Delete(T entity)
         {
             ClearAll();
-            var tableName = typeof(T).Name;
+            var tableName = GetTableName(typeof(T));
 
-            _query = $"DELETE FROM {tableName}s Where id=@id";
+            _query = $"DELETE FROM {tableName} Where id=@id";
             _parameters.Add(new SqlParameter("@id", entity.GetType().GetProperty("Id")?.GetValue(entity) ?? DBNull.Value));
             return this;
         }
@@ -230,9 +235,9 @@ namespace matcha.Infrastructure.Repositories
             if (columnValues == null || columnValues.Count == 0)
                 throw new ArgumentNullException("no columns to update");
 
-            var tableName = typeof(T).Name;
+            var tableName = GetTableName(typeof(T));
 
-            _query = $"UPDATE {tableName}s SET ";
+            _query = $"UPDATE {tableName} SET ";
 
             var setClause = string.Join(", ", columnValues.Select(kv => $"{kv.Key} = {FormatValue(kv.Value)}"));
 
@@ -267,9 +272,9 @@ namespace matcha.Infrastructure.Repositories
         public IQueryBuilder<T> Update(T entity)
         {
             ClearAll();
-            var tableName = typeof(T).Name;
+            var tableName = GetTableName(typeof(T));
 
-            _query = $"UPDATE {tableName}s SET ";
+            _query = $"UPDATE {tableName} SET ";
 
             var properties = entity.GetType().GetProperties().Where(x => IsSimple(x.PropertyType) && !Attribute.IsDefined(x, typeof(NotMappedAttribute)));
 

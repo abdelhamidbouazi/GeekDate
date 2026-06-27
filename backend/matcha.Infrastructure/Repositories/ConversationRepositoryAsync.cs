@@ -1,11 +1,11 @@
-﻿using matcha.Application.Helper;
-using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services.Database;
-using matcha.Domain.Entities;
-using matcha.Infrastructure.ReposUsingCustomQueryBuilder;
+﻿using sparkdates.Application.Helper;
+using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services.Database;
+using sparkdates.Domain.Entities;
+using sparkdates.Infrastructure.ReposUsingCustomQueryBuilder;
 using Microsoft.Data.SqlClient;
 
-namespace matcha.Infrastructure.Repositories
+namespace sparkdates.Infrastructure.Repositories
 {
     public class ConversationRepositoryAsync : GenericRepoAsync<Conversation>, IConversationRepositoryAsync
     {

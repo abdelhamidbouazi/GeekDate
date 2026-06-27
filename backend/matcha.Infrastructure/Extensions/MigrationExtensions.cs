@@ -1,9 +1,9 @@
-﻿using matcha.Infrastructure.ApplicationDbContext;
+﻿using sparkdates.Infrastructure.ApplicationDbContext;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.Extensions
+namespace sparkdates.Infrastructure.Extensions
 {
     public static class MigrationExtensions
     {

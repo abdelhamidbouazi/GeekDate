@@ -1,8 +1,8 @@
-﻿using matcha.Application.Dtos.InterestDtos;
-using matcha.Application.ResponseWrappers;
+﻿using sparkdates.Application.Dtos.InterestDtos;
+using sparkdates.Application.ResponseWrappers;
 using MediatR;
 
-namespace matcha.Application.Features.Interests.Queries.GetInterest
+namespace sparkdates.Application.Features.Interests.Queries.GetInterest
 {
     public class GetInterestQuery : IRequest<Response<GetInterestDto>>
     {

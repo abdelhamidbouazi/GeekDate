@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Common.Enums;
+﻿using sparkdates.Domain.Common.Enums;
 
-namespace matcha.Domain.Entities
+namespace sparkdates.Domain.Entities
 {
     public class Notification : EntityBase
     {

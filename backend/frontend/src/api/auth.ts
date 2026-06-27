@@ -3,7 +3,7 @@ import type { ApiResponse, LoginRequest, LoginResponse, RegisterRequest, ResetPa
 
 export const authApi = {
   register: (data: RegisterRequest) =>
-    api.post<ApiResponse<{ username: string; token: string }>>('/auth/register', data),
+    api.post<ApiResponse<{ Username: string; token: string }>>('/auth/register', data),
 
   login: (data: LoginRequest) =>
     api.post<ApiResponse<LoginResponse>>('/auth/login', data),

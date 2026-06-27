@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Search, Heart, MessageCircle, User } from "lucide-react"
+import { Search, Heart, ThumbsUp, MessageCircle, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -17,6 +17,11 @@ const navItems = [
     title: "Matches",
     url: "/matches",
     icon: Heart,
+  },
+  {
+    title: "Likes",
+    url: "/likes",
+    icon: ThumbsUp,
   },
   {
     title: "Messages",

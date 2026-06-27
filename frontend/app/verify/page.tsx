@@ -2,12 +2,12 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, MapPin, Upload } from "lucide-react"
-import { authApi } from "@/lib/auth"
-import { api } from "@/lib/services/api"
+import { ChevronLeft, ChevronRight, LogOut, MapPin, Upload } from "lucide-react"
+import { authApi, clearAuthCookie } from "@/lib/auth"
 import { browseApi, type GetInterestsDto } from "@/lib/services/browse-api"
 import { InterestsField } from "./interests-field"
 import { profileApi } from "@/lib/services/profile-api"
+import { geocodeCityCountry } from "@/lib/api/location"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,6 +46,25 @@ const PREFERRED_GENDER_OPTIONS = [
 ]
 
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function VerifyShell({
+  children,
+  onLogout,
+}: {
+  children: React.ReactNode
+  onLogout: () => void
+}) {
+  return (
+    <div className="bg-muted relative flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <div className="absolute right-4 top-4">
+        <Button variant="ghost" size="sm" onClick={onLogout}>
+          <LogOut className="mr-2 size-4" />
+          Log out
+        </Button>
+      </div>
+      {children}
+    </div>
+  )
+}
 
 function VerifyContent() {
   const router = useRouter()
@@ -147,6 +166,26 @@ function VerifyContent() {
         if (!emailVerified) {
           setStep("verify-email")
         } else {
+          try {
+            const profile = await profileApi.getConnectedProfile()
+            const completed =
+              profile?.isProfileCompleted ??
+              (profile as { IsProfileCompleted?: boolean })?.IsProfileCompleted ??
+              false
+            if (completed) {
+              await refreshProfileCompletedSession()
+              const lat = profile?.latitude ?? (profile as { Latitude?: number })?.Latitude ?? 0
+              const lng = profile?.longitude ?? (profile as { Longitude?: number })?.Longitude ?? 0
+              if (lat !== 0 || lng !== 0) {
+                router.replace("/browse")
+                return
+              }
+              setStep("location")
+              return
+            }
+          } catch {
+            // Fall through to onboarding from the beginning.
+          }
           setStep("basic-profile")
           fetchInterests()
         }
@@ -169,6 +208,21 @@ function VerifyContent() {
     void fetchInterests()
   }, [step, interests.length, fetchInterests])
 
+  async function handleLogout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // ignore
+    } finally {
+      localStorage.removeItem("accessToken")
+      localStorage.removeItem("refreshToken")
+      localStorage.removeItem("user")
+      sessionStorage.removeItem("emailJustVerified")
+      clearAuthCookie()
+      router.push("/login")
+    }
+  }
+
   async function handleIveVerified() {
     setVerifyLoading(true)
     setError("")
@@ -184,6 +238,32 @@ function VerifyContent() {
       setError("Failed to check verification status")
     } finally {
       setVerifyLoading(false)
+    }
+  }
+
+  async function refreshProfileCompletedSession() {
+    try {
+      const response = await authApi.refreshToken()
+      const token =
+        response && typeof response === "object"
+          ? ((response as { data?: string; Data?: string }).data ??
+            (response as { data?: string; Data?: string }).Data)
+          : undefined
+
+      if (typeof token === "string" && token.trim()) {
+        localStorage.setItem("accessToken", token.trim())
+      }
+
+      const rawUser = localStorage.getItem("user")
+      if (rawUser) {
+        const user = JSON.parse(rawUser) as Record<string, unknown>
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ ...user, isProfileCompleted: true })
+        )
+      }
+    } catch {
+      // The profile is already persisted; stale claims are handled by /verify init.
     }
   }
 
@@ -209,7 +289,7 @@ function VerifyContent() {
           form.append("Photos", extraPictures[i])
         }
       }
-      await api.putFormData<unknown>("/api/UserProfile/complete-basic-profile", form)
+      await profileApi.completeBasicProfile(form)
       setStep("preferences")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save basic profile")
@@ -221,16 +301,6 @@ function VerifyContent() {
   async function handlePreferencesSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    const allPictures: File[] = mainPicture ? [mainPicture] : []
-    if (extraPictures) {
-      for (let i = 0; i < Math.min(extraPictures.length, 4); i++) {
-        allPictures.push(extraPictures[i])
-      }
-    }
-    if (allPictures.length === 0) {
-      setError("Please add at least one picture")
-      return
-    }
     const validIds = selectedInterestIds.filter((id) => GUID_REGEX.test(id))
     if (validIds.length === 0) {
       setError("Please select at least one interest")
@@ -243,8 +313,8 @@ function VerifyContent() {
       form.append("PreferredGender", preferredGender)
       form.append("Gender", gender)
       validIds.forEach((id) => form.append("UserInterestIds", id))
-      allPictures.forEach((file) => form.append("Pictures", file))
-      await api.putFormData<unknown>("/api/UserProfile/complete-preferences", form)
+      await profileApi.completePreferences(form)
+      await refreshProfileCompletedSession()
       setStep("location")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to complete profile")
@@ -257,18 +327,6 @@ function VerifyContent() {
     setSelectedInterestIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
-  }
-
-  async function geocodeCityCountry(city: string, country: string): Promise<{ lat: number; lon: number }> {
-    const query = encodeURIComponent(`${city.trim()}, ${country.trim()}`)
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
-      { headers: { "Accept-Language": "en", "User-Agent": "Matcha/1.0" } }
-    )
-    if (!res.ok) throw new Error("Geocoding failed")
-    const data = (await res.json()) as { lat: string; lon: string }[]
-    if (!data?.[0]) throw new Error("Location not found. Try a different city or country.")
-    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
   }
 
   async function handleLocationAllow() {
@@ -331,7 +389,7 @@ function VerifyContent() {
 
   if (step === "verify-email") {
     return (
-      <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <VerifyShell onLogout={handleLogout}>
         <div className="w-full max-w-sm">
           <Card>
             <CardHeader className="text-center">
@@ -349,16 +407,19 @@ function VerifyContent() {
               <Button onClick={handleIveVerified} disabled={verifyLoading}>
                 {verifyLoading ? "Checking..." : "I've verified"}
               </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                Resending verification emails is not exposed by the backend.
+              </p>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </VerifyShell>
     )
   }
 
   if (step === "basic-profile") {
     return (
-      <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <VerifyShell onLogout={handleLogout}>
         <div className="w-full max-w-md">
           <Card>
             <CardHeader className="text-center">
@@ -436,13 +497,13 @@ function VerifyContent() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </VerifyShell>
     )
   }
 
   if (step === "location") {
     return (
-      <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <VerifyShell onLogout={handleLogout}>
         <div className="w-full max-w-sm">
           <Card>
             <CardHeader className="text-center">
@@ -523,12 +584,12 @@ function VerifyContent() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </VerifyShell>
     )
   }
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+    <VerifyShell onLogout={handleLogout}>
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
@@ -606,7 +667,7 @@ function VerifyContent() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </VerifyShell>
   )
 }
 

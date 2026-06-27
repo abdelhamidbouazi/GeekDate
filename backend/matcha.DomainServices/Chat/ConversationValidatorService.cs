@@ -1,9 +1,9 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.Services;
-using matcha.Application.Interfaces.UoW;
-using matcha.Domain.Entities;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Domain.Entities;
 
-namespace matcha.DomainServices.Chat
+namespace sparkdates.DomainServices.Chat
 {
     public class ConversationValidatorService : IConversationValidatorService
     {

@@ -1,9 +1,13 @@
 import { api } from "./api";
+import { getMatches, getReceivedLikes, getGivenLikes } from "@/lib/api/users";
+import { getApiOrigin } from "@/lib/api/http";
+import { endpoints } from "@/lib/api/endpoints";
+import {
+  completeBasicProfile,
+  completePreferences,
+} from "@/lib/api/profile";
 
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(
-  /\/$/,
-  ""
-);
+const API_ORIGIN = getApiOrigin();
 
 /** Placeholder for missing profile images (Next/Image compatible). */
 export const PROFILE_IMAGE_PLACEHOLDER =
@@ -56,6 +60,43 @@ export function normalizeProfileViewerRaw(raw: unknown): ProfileViewerUser {
   };
 }
 
+export function normalizeProfileSummaryRaw(raw: unknown): ProfileSummaryUser {
+  const base = normalizeProfileViewerRaw(raw);
+  if (raw == null || typeof raw !== "object") {
+    return base;
+  }
+  const o = raw as Record<string, unknown>;
+  const matchedAt = o.matchedAt ?? o.MatchedAt;
+  return {
+    ...base,
+    userName: (o.userName ?? o.UserName) as string | null | undefined,
+    city: (o.city ?? o.City) as string | null | undefined,
+    country: (o.country ?? o.Country) as string | null | undefined,
+    matchedAt:
+      matchedAt != null && String(matchedAt).trim()
+        ? String(matchedAt)
+        : null,
+  };
+}
+
+function normalizeLikeInfo(raw: unknown): UserLikeInfo {
+  if (!raw || typeof raw !== "object") return {}
+  const o = raw as Record<string, unknown>
+  return {
+    firstName: (o.firstName ?? o.FirstName) as string | undefined,
+    lastName: (o.lastName ?? o.LastName) as string | undefined,
+    isLikedByMe: Boolean(o.isLikedByMe ?? o.IsLikedByMe),
+    isLikedByThem: Boolean(o.isLikedByThem ?? o.IsLikedByThem),
+    isMatched: Boolean(o.isMatched ?? o.IsMatched),
+  }
+}
+
+async function fetchProfileSummaryList(path: string): Promise<ProfileSummaryUser[]> {
+  const data = await api.get<unknown[]>(path);
+  if (!Array.isArray(data)) return [];
+  return data.map(normalizeProfileSummaryRaw);
+}
+
 /** GET /api/Users/me — backend UserDto (camelCase JSON). */
 export interface AuthenticatedUserSummary {
   userName: string;
@@ -65,7 +106,7 @@ export interface AuthenticatedUserSummary {
 }
 
 /**
- * GET /api/Users/profile-views and profile-likes —
+ * GET /api/Users/profile-views, profile-likes, matches, likes/* —
  * UserProfileViewerDto / UserProfileLikedDto (camelCase JSON).
  */
 export interface ProfileViewerUser {
@@ -76,12 +117,33 @@ export interface ProfileViewerUser {
   profilePicture?: string | null;
 }
 
+export interface ProfileSummaryUser extends ProfileViewerUser {
+  userName?: string | null;
+  city?: string | null;
+  country?: string | null;
+  matchedAt?: string | null;
+}
+
 export function profileViewerDisplayName(v: ProfileViewerUser): string {
   const name = [v.firstName, v.lastName]
     .map((s) => (typeof s === "string" ? s.trim() : ""))
     .filter(Boolean)
     .join(" ");
   return name || "Member";
+}
+
+export function profileSummaryDisplayName(v: ProfileSummaryUser): string {
+  const full = profileViewerDisplayName(v);
+  if (full !== "Member") return full;
+  const un = v.userName?.trim();
+  return un || "Member";
+}
+
+export function profileSummaryLocation(v: ProfileSummaryUser): string | null {
+  const parts = [v.city, v.country]
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 /**
@@ -162,41 +224,69 @@ export interface ImageDto {
   isMain: boolean;
 }
 
+export interface UpdateProfilePayload {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  gender: number;
+  biography: string;
+  sexualPreferences: number;
+  userInterestIds: string[];
+  city: string;
+}
+
 export const profileApi = {
-  getMe: () => api.get<AuthenticatedUserSummary>("/api/Users/me"),
+  getMe: () => api.get<AuthenticatedUserSummary>(endpoints.users.me),
 
-  getUser: (userId: string) => api.get<AppUser>(`/api/Users/${userId}`),
+  getUser: (userId: string) => api.get<AppUser>(endpoints.users.byId(userId)),
 
-  getUserLikeInfo: (userId: string) => api.get<UserLikeInfo>(`/api/Users/${userId}`),
+  getUserLikeInfo: async (userId: string) =>
+    normalizeLikeInfo(await api.get<UserLikeInfo>(endpoints.users.byId(userId))),
 
   uploadImage: (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return api.postFormData<ImageDto>("/api/Users/upload-image", formData);
+    return api.postFormData<ImageDto>(endpoints.users.uploadImage, formData);
   },
 
-  setMainPhoto: (photoId: string, userId: string) =>
-    api.put<void>(`/api/Users/set-main-photo/${photoId}?userId=${userId}`),
+  setMainPhoto: (photoId: string, userId?: string) => {
+    void userId;
+    return api.put<void>(endpoints.users.setMainPhoto(photoId));
+  },
 
-  deletePhoto: (photoId: string) => api.delete<void>(`/api/Users/delete-photo/${photoId}`),
+  deletePhoto: (photoId: string) => api.delete<void>(endpoints.users.deletePhoto(photoId)),
 
   getProfileViews: async () => {
-    const data = await api.get<unknown[]>("/api/Users/profile-views");
+    const data = await api.get<unknown[]>(endpoints.users.profileViews);
     if (!Array.isArray(data)) return [];
     return data.map(normalizeProfileViewerRaw);
   },
 
   getProfileLikes: async () => {
-    const data = await api.get<unknown[]>("/api/Users/profile-likes");
-    if (!Array.isArray(data)) return [];
-    return data.map(normalizeProfileViewerRaw);
+    return fetchProfileSummaryList(endpoints.users.profileLikes);
+  },
+
+  getMatches: async () => {
+    const rows = await getMatches();
+    return rows.map(normalizeProfileSummaryRaw);
+  },
+
+  getLikesReceived: async () => {
+    const rows = await getReceivedLikes();
+    return rows.map(normalizeProfileSummaryRaw);
+  },
+
+  getLikesGiven: async () => {
+    const rows = await getGivenLikes();
+    return rows.map(normalizeProfileSummaryRaw);
   },
 
   markProfileViewed: (userId: string) =>
-    api.post<void>(`/api/Users/mark-profile-as-viewed/${userId}`),
+    api.post<void>(endpoints.users.markViewed(userId)),
 
   blockProfile: (userId: string) =>
-    api.post<void>(`/api/Users/block-profile/${userId}`),
+    api.post<void>(endpoints.users.blockProfile(userId)),
 
   getConnectedProfile: () =>
     api.get<{
@@ -205,11 +295,18 @@ export const profileApi = {
       Latitude?: number;
       Longitude?: number;
       [key: string]: unknown;
-    }>("/api/UserProfile/me"),
+    }>(endpoints.profile.me),
 
   setLocation: (lat: number, lng: number) =>
-    api.post<void>("/api/UserProfile/set-location", {
-      Latitude: lat,
-      Longitude: lng,
+    api.post<void>(endpoints.profile.setLocation, {
+      latitude: lat,
+      longitude: lng,
     }),
+
+  completeBasicProfile: (formData: FormData) => completeBasicProfile(formData),
+
+  completePreferences: (formData: FormData) => completePreferences(formData),
+
+  updateProfile: (body: UpdateProfilePayload) =>
+    api.put<unknown>(endpoints.profile.updateProfile, body),
 };

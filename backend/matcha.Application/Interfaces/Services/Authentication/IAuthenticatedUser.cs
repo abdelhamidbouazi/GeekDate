@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Entities;
+﻿using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Services.Authentication
+namespace sparkdates.Application.Interfaces.Services.Authentication
 {
     public interface IAuthenticatedUser
     {

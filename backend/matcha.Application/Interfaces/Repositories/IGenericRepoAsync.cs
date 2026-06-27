@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.Common;
+﻿using sparkdates.Application.Dtos.Common;
 using System.Linq.Expressions;
 
-namespace matcha.Application.Interfaces.Repositories
+namespace sparkdates.Application.Interfaces.Repositories
 {
     public interface IGenericRepoAsync<T> where T : class
     {

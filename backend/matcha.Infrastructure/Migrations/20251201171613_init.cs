@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace matcha.Infrastructure.Migrations
+namespace sparkdates.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class init : Migration

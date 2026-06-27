@@ -1,7 +1,7 @@
-﻿using matcha.Application.Dtos.Users;
-using matcha.Application.Specifications;
+﻿using sparkdates.Application.Dtos.Users;
+using sparkdates.Application.Specifications;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IUserSearchServiceAsync
     {

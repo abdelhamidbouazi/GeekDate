@@ -26,7 +26,7 @@ export function middleware(request: NextRequest) {
   const hasAuth = request.cookies.has(AUTH_COOKIE);
 
   if (hasAuth && isAuthRoute(pathname)) {
-    return NextResponse.redirect(new URL("/browse", request.url));
+    return NextResponse.redirect(new URL("/verify", request.url));
   }
 
   if (!hasAuth && !isPublicRoute(pathname)) {

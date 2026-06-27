@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using matcha.Infrastructure.ApplicationDbContext;
+using sparkdates.Infrastructure.ApplicationDbContext;
 
 #nullable disable
 
-namespace matcha.Infrastructure.Migrations
+namespace sparkdates.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20251201171613_init")]
@@ -25,7 +25,7 @@ namespace matcha.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("matcha.Domain.Entities.AppUser", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -131,7 +131,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("AppUsers", (string)null);
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.ConfirmEmailToken", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.ConfirmEmailToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -160,7 +160,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("ConfirmEmailTokens");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.Interest", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.Interest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -174,7 +174,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("Interests");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.Photo", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.Photo", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -199,7 +199,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("Photos");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.ProfileView", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.ProfileView", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -219,7 +219,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("ProfileViews");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.RefreshToken", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -255,7 +255,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.ResetPassword", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.ResetPassword", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -280,7 +280,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("ResetPasswords");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.Tag", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.Tag", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -297,7 +297,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("Tag");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserBlock", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserBlock", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -319,7 +319,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("UserBlocks", (string)null);
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserInterest", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserInterest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -340,7 +340,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("UserInterests", (string)null);
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserLike", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserLike", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -371,7 +371,7 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("UserLikes", (string)null);
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserTag", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserTag", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -392,9 +392,9 @@ namespace matcha.Infrastructure.Migrations
                     b.ToTable("UserTag");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.ConfirmEmailToken", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.ConfirmEmailToken", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.AppUser", "User")
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", "User")
                         .WithMany("ConfirmEmailTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -403,9 +403,9 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.Photo", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.Photo", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.AppUser", "User")
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", "User")
                         .WithMany("Photos")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -414,9 +414,9 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.RefreshToken", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.RefreshToken", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.AppUser", "User")
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -425,9 +425,9 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.ResetPassword", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.ResetPassword", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.AppUser", "User")
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -436,22 +436,22 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserBlock", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserBlock", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.AppUser", null)
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", null)
                         .WithMany("UserBlocks")
                         .HasForeignKey("AppUserId");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserInterest", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserInterest", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.Interest", "Interest")
+                    b.HasOne("sparkdates.Domain.Entities.Interest", "Interest")
                         .WithMany("Users")
                         .HasForeignKey("InterestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("matcha.Domain.Entities.AppUser", "User")
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", "User")
                         .WithMany("Interests")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -462,22 +462,22 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserLike", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserLike", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.AppUser", null)
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", null)
                         .WithMany("UserLikes")
                         .HasForeignKey("AppUserId");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.UserTag", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.UserTag", b =>
                 {
-                    b.HasOne("matcha.Domain.Entities.Tag", "Tag")
+                    b.HasOne("sparkdates.Domain.Entities.Tag", "Tag")
                         .WithMany("UserTags")
                         .HasForeignKey("TagId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("matcha.Domain.Entities.AppUser", "User")
+                    b.HasOne("sparkdates.Domain.Entities.AppUser", "User")
                         .WithMany("Tags")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -488,7 +488,7 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.AppUser", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.AppUser", b =>
                 {
                     b.Navigation("ConfirmEmailTokens");
 
@@ -503,12 +503,12 @@ namespace matcha.Infrastructure.Migrations
                     b.Navigation("UserLikes");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.Interest", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.Interest", b =>
                 {
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("matcha.Domain.Entities.Tag", b =>
+            modelBuilder.Entity("sparkdates.Domain.Entities.Tag", b =>
                 {
                     b.Navigation("UserTags");
                 });

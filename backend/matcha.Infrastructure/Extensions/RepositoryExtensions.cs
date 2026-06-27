@@ -1,11 +1,11 @@
-﻿using matcha.Application.Interfaces.Repositories;
-using matcha.Application.Interfaces.UoW;
-using matcha.Infrastructure.Repositories;
-using matcha.Infrastructure.UoW;
+﻿using sparkdates.Application.Interfaces.Repositories;
+using sparkdates.Application.Interfaces.UoW;
+using sparkdates.Infrastructure.Repositories;
+using sparkdates.Infrastructure.UoW;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace matcha.Infrastructure.Extensions
+namespace sparkdates.Infrastructure.Extensions
 {
     public static class RepositoryExtensions
     {

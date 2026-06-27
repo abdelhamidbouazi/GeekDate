@@ -1,6 +1,6 @@
-﻿using matcha.Domain.Entities;
+﻿using sparkdates.Domain.Entities;
 
-namespace matcha.Application.Interfaces.Services
+namespace sparkdates.Application.Interfaces.Services
 {
     public interface IMatchServiceAsync
     {

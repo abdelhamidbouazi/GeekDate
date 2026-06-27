@@ -1,76 +1,254 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { useEffect, useMemo, useRef, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
 import {
-  User,
+  Camera,
+  Check,
   Edit,
-  MapPin,
   Eye,
   Heart,
-  Calendar,
-  Camera,
-  Settings,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  MessageCircle,
+  Navigation,
   Star,
-  Image as ImageIcon,
-  Activity,
+  Trash2,
+  User,
+  Users,
 } from "lucide-react"
-import Image from "next/image"
+import { toast } from "sonner"
+
+import { AuthenticatedShell } from "@/components/layout/authenticated-shell"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  calculateAge,
-  formatJoinedDate,
-  PROFILE_PHOTO_PLACEHOLDER,
-} from "@/lib/utils/profile"
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
+import { browseApi, type GetInterestsDto } from "@/lib/services/browse-api"
+import {
+  profileApi,
+  profileSummaryDisplayName,
+  profileSummaryLocation,
+  profileViewerDisplayName,
+  resolveProfileMediaUrl,
+  type ProfileSummaryUser,
+  type ProfileViewerUser,
+} from "@/lib/services/profile-api"
+import { calculateAge } from "@/lib/utils/profile"
+import { dedupeProfilePhotos, extractInterestIds } from "@/lib/utils/profile-view"
 import { useMyProfile } from "@/features/profile/hooks/use-my-profile"
 
+type EditState = {
+  firstName: string
+  lastName: string
+  email: string
+  gender: string
+  sexualPreferences: string
+  biography: string
+  city: string
+  interestIds: string[]
+}
+
+function genderLabel(value: number | string): string {
+  const n = Number(value)
+  if (n === 1) return "Man"
+  if (n === 2) return "Woman"
+  return "Not specified"
+}
+
+function preferenceLabel(value: number | string): string {
+  const n = Number(value)
+  if (n === 1) return "Men"
+  if (n === 2) return "Women"
+  if (n === 3) return "Everyone"
+  return "Not specified"
+}
+
+function interestId(item: GetInterestsDto): string | null {
+  const id = item.id ?? item.Id
+  return id ? String(id) : null
+}
+
+function interestName(item: GetInterestsDto): string {
+  return item.name ?? item.Name ?? ""
+}
+
+function ProfileStudioSkeleton() {
+  return (
+    <AuthenticatedShell>
+      <div className="space-y-5 p-4 lg:p-6">
+        <Skeleton className="h-64 rounded-lg" />
+        <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
+          <Skeleton className="h-96 rounded-lg" />
+          <Skeleton className="h-96 rounded-lg" />
+        </div>
+      </div>
+    </AuthenticatedShell>
+  )
+}
+
 export function MyProfileDashboard() {
-  const router = useRouter()
   const {
     user,
     profileViews,
     profileLikes,
+    mutualMatches,
     loading,
     error,
-    isEditing,
-    setIsEditing,
-    selectedPhotoIndex,
-    setSelectedPhotoIndex,
     uploading,
     fileInputRef,
+    userId,
+    fetchProfile,
+    fetchActivity,
     handleUploadPhoto,
     handleSetMainPhoto,
     handleDeletePhoto,
     activity,
   } = useMyProfile()
 
-  const photos = user?.photos ?? []
-  const mainPhoto = photos.find((p) => p.isMain) ?? photos[0]
-  const displayPhotos =
-    photos.length > 0 ? photos.map((p) => p.url) : [PROFILE_PHOTO_PLACEHOLDER]
-  const location =
-    [user?.city, user?.country].filter(Boolean).join(", ") || "Location not set"
+  const dialogFileInputRef = useRef<HTMLInputElement>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [interests, setInterests] = useState<GetInterestsDto[]>([])
+  const [interestsLoading, setInterestsLoading] = useState(false)
+  const [edit, setEdit] = useState<EditState>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    gender: "0",
+    sexualPreferences: "0",
+    biography: "",
+    city: "",
+    interestIds: [],
+  })
 
-  if (loading && !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading profile...</p>
-      </div>
-    )
+  const photos = useMemo(() => dedupeProfilePhotos(user?.photos ?? []).slice(0, 5), [user?.photos])
+  const mainPhoto = photos.find((photo) => photo.isMain) ?? photos[0]
+  const age = calculateAge(user?.dateOfBirth ?? null)
+  const location = [user?.city, user?.country].filter(Boolean).join(", ") || "Location not set"
+  const hasGps = Boolean(user?.latitude && user?.longitude)
+  const selectedInterestNames = useMemo(() => {
+    const names = new Map(interests.map((item) => [interestId(item), interestName(item)]))
+    return (user?.interests ?? [])
+      .map((item) => item.interest?.name ?? names.get(item.interestId) ?? item.interestId)
+      .filter(Boolean)
+  }, [interests, user?.interests])
+
+  const completion = useMemo(() => {
+    if (!user) return { percent: 0, missing: ["profile"] }
+    const checks = [
+      { ok: Boolean(user.firstName), label: "first name" },
+      { ok: Boolean(user.lastName), label: "last name" },
+      { ok: Boolean(user.email), label: "email" },
+      { ok: Boolean(user.biography), label: "bio" },
+      { ok: photos.length > 0, label: "photo" },
+      { ok: selectedInterestNames.length > 0, label: "interests" },
+      { ok: Boolean(user.city || hasGps), label: "location" },
+    ]
+    const done = checks.filter((item) => item.ok).length
+    return {
+      percent: Math.round((done / checks.length) * 100),
+      missing: checks.filter((item) => !item.ok).map((item) => item.label),
+    }
+  }, [hasGps, photos.length, selectedInterestNames.length, user])
+
+  useEffect(() => {
+    if (!user) return
+    setEdit({
+      firstName: user.firstName ?? "",
+      lastName: user.lastName ?? "",
+      email: user.email ?? "",
+      gender: String(user.gender ?? 0),
+      sexualPreferences: String(user.lookingFor ?? user.preferredGender ?? 0),
+      biography: user.biography ?? "",
+      city: user.city ?? "",
+      interestIds: extractInterestIds(user),
+    })
+  }, [user])
+
+  useEffect(() => {
+    setInterestsLoading(true)
+    browseApi
+      .getInterests()
+      .then(setInterests)
+      .catch(() => setInterests([]))
+      .finally(() => setInterestsLoading(false))
+  }, [])
+
+  async function saveProfile() {
+    if (!userId) return
+    if (!edit.firstName.trim() || !edit.lastName.trim() || !edit.email.trim()) {
+      toast.error("First name, last name, and email are required.")
+      return
+    }
+    setSaving(true)
+    try {
+      await profileApi.updateProfile({
+        userId,
+        firstName: edit.firstName.trim(),
+        lastName: edit.lastName.trim(),
+        email: edit.email.trim(),
+        gender: Number(edit.gender) || 0,
+        biography: edit.biography.trim(),
+        sexualPreferences: Number(edit.sexualPreferences) || 0,
+        userInterestIds: edit.interestIds,
+        city: edit.city.trim(),
+      })
+      await Promise.all([fetchProfile(), fetchActivity()])
+      toast.success("Profile updated")
+      setEditOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update profile")
+    } finally {
+      setSaving(false)
+    }
   }
+
+  function toggleInterest(id: string) {
+    setEdit((current) => ({
+      ...current,
+      interestIds: current.interestIds.includes(id)
+        ? current.interestIds.filter((item) => item !== id)
+        : [...current.interestIds, id],
+    }))
+  }
+
+  if (loading && !user) return <ProfileStudioSkeleton />
 
   if (error && !user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-        <p className="text-destructive">{error}</p>
-        <Button variant="outline" onClick={() => router.push("/login")}>
-          Go to login
-        </Button>
-      </div>
+      <AuthenticatedShell>
+        <div className="grid min-h-[60vh] place-items-center p-4">
+          <Alert variant="destructive" className="max-w-lg">
+            <AlertTitle>Profile could not be loaded</AlertTitle>
+            <AlertDescription className="mt-2">{error}</AlertDescription>
+          </Alert>
+        </div>
+      </AuthenticatedShell>
     )
   }
 
@@ -78,387 +256,414 @@ export function MyProfileDashboard() {
 
   return (
     <AuthenticatedShell>
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto">
-          <div className="flex flex-col">
-            <div className="relative h-64 w-full overflow-hidden bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-blue-500/20">
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{
-                  backgroundImage: mainPhoto?.url
-                    ? `url(${mainPhoto.url})`
-                    : undefined,
-                }}
+      <main className="min-h-screen bg-background">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleUploadPhoto}
+        />
+        <div className="mx-auto max-w-7xl space-y-5 p-4 lg:p-6">
+          <section className="relative overflow-hidden rounded-lg border bg-card">
+            <div className="absolute inset-0 h-44 bg-gradient-to-r from-zinc-950 via-zinc-800 to-stone-700" />
+            {mainPhoto ? (
+              <Image
+                src={resolveProfileMediaUrl(mainPhoto.url)}
+                alt={`${user.firstName} profile cover`}
+                fill
+                className="object-cover opacity-20"
+                sizes="1200px"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-              <div className="absolute bottom-4 right-4">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleUploadPhoto}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="backdrop-blur-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <Camera className="mr-2 size-4" />
-                  {uploading ? "Uploading..." : "Edit Cover"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="relative border-b px-4 pb-6 lg:px-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:-mt-20 -mt-16">
-                <div className="relative">
-                  <Avatar className="size-32 border-4 border-background ring-4 ring-background/50 sm:size-40">
-                    <AvatarImage
-                      src={mainPhoto?.url ?? PROFILE_PHOTO_PLACEHOLDER}
-                      alt={`${user.firstName} ${user.lastName}`}
-                    />
-                    <AvatarFallback>
-                      <User className="size-12" />
+            ) : null}
+            <div className="relative space-y-6 p-5 pt-24 lg:p-8 lg:pt-28">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <Avatar className="size-28 rounded-lg border-4 border-background shadow-xl lg:size-36">
+                    <AvatarImage src={resolveProfileMediaUrl(mainPhoto?.url ?? user.photoProfileUrl)} />
+                    <AvatarFallback className="rounded-lg">
+                      <User className="size-10" />
                     </AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="absolute right-0 bottom-0 size-8 rounded-full"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    <Camera className="size-4" />
-                  </Button>
-                </div>
-
-                <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h1 className="text-3xl font-bold">
-                        {[user.firstName, user.lastName].filter(Boolean).join(" ") ||
-                          user.userName ||
-                          "User"}
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                        Profile Studio
+                      </p>
+                      <h1 className="text-3xl font-semibold tracking-tight lg:text-5xl">
+                        {[user.firstName, user.lastName].filter(Boolean).join(" ") || user.userName}
                       </h1>
-                      {calculateAge(user.dateOfBirth) != null && (
-                        <Badge variant="outline" className="text-xs">
-                          {calculateAge(user.dateOfBirth)}
-                        </Badge>
-                      )}
                     </div>
-                    <p className="text-muted-foreground">@{user.userName}</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="size-4" />
-                        <span>{location}</span>
-                      </div>
-                      {user.createdAt && (
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="size-4" />
-                          <span>{formatJoinedDate(user.createdAt)}</span>
-                        </div>
-                      )}
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      <Badge variant="outline">@{user.userName}</Badge>
+                      {age != null && <Badge variant="outline">{age} years old</Badge>}
+                      <Badge variant="outline">{genderLabel(user.gender)}</Badge>
+                      <Badge variant="outline">{preferenceLabel(user.lookingFor ?? user.preferredGender)}</Badge>
                     </div>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    variant={isEditing ? "default" : "outline"}
-                    onClick={() => setIsEditing(!isEditing)}
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || photos.length >= 5}
                   >
-                    <Edit className="mr-2 size-4" />
-                    {isEditing ? "Save Changes" : "Edit Profile"}
+                    {uploading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ImagePlus className="mr-2 size-4" />}
+                    Upload photo
                   </Button>
+                  <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Edit className="mr-2 size-4" />
+                        Edit profile
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[92vh] max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Edit profile</DialogTitle>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[68vh] pr-4">
+                        <div className="space-y-5">
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field label="First name" value={edit.firstName} onChange={(value) => setEdit((s) => ({ ...s, firstName: value }))} />
+                            <Field label="Last name" value={edit.lastName} onChange={(value) => setEdit((s) => ({ ...s, lastName: value }))} />
+                            <Field label="Email" value={edit.email} onChange={(value) => setEdit((s) => ({ ...s, email: value }))} />
+                            <Field label="City / neighborhood" value={edit.city} onChange={(value) => setEdit((s) => ({ ...s, city: value }))} />
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label>Gender</Label>
+                              <Select value={edit.gender} onValueChange={(value) => setEdit((s) => ({ ...s, gender: value }))}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">Not specified</SelectItem>
+                                  <SelectItem value="1">Man</SelectItem>
+                                  <SelectItem value="2">Woman</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Sexual preferences</Label>
+                              <Select value={edit.sexualPreferences} onValueChange={(value) => setEdit((s) => ({ ...s, sexualPreferences: value }))}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">Not specified</SelectItem>
+                                  <SelectItem value="1">Men</SelectItem>
+                                  <SelectItem value="2">Women</SelectItem>
+                                  <SelectItem value="3">Everyone</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Biography</Label>
+                            <Textarea
+                              value={edit.biography}
+                              onChange={(event) => setEdit((s) => ({ ...s, biography: event.target.value }))}
+                              rows={5}
+                              maxLength={800}
+                            />
+                          </div>
+                          <div className="space-y-3">
+                            <Label>Interests</Label>
+                            {interestsLoading ? (
+                              <p className="text-sm text-muted-foreground">Loading interests...</p>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {interests.map((item) => {
+                                  const id = interestId(item)
+                                  const name = interestName(item)
+                                  if (!id || !name) return null
+                                  const active = edit.interestIds.includes(id)
+                                  return (
+                                    <button
+                                      key={id}
+                                      type="button"
+                                      onClick={() => toggleInterest(id)}
+                                      className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                                        active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"
+                                      }`}
+                                    >
+                                      {name}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </ScrollArea>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
+                          Cancel
+                        </Button>
+                        <Button onClick={saveProfile} disabled={saving}>
+                          {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Check className="mr-2 size-4" />}
+                          Save profile
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
 
-              {user.biography && (
-                <div className="mt-4">
-                  <p className="text-sm leading-relaxed">{user.biography}</p>
-                </div>
-              )}
-
-              <div className="mt-6 flex flex-wrap gap-6">
-                <div className="flex items-center gap-2">
-                  <Eye className="size-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <span className="font-semibold">{profileViews.length}</span>{" "}
-                    <span className="text-muted-foreground">profile views</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Heart className="size-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <span className="font-semibold">{profileLikes.length}</span>{" "}
-                    <span className="text-muted-foreground">likes received</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="size-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    <span className="font-semibold">{user.fameRating ?? 0}</span>{" "}
-                    <span className="text-muted-foreground">fame rating</span>
-                  </span>
-                </div>
+              <div className="grid gap-3 md:grid-cols-4">
+                <Metric icon={Star} label="Fame rating" value={user.fameRating ?? 0} />
+                <Metric icon={Eye} label="Visitors" value={profileViews.length} />
+                <Metric icon={Heart} label="Likes received" value={profileLikes.length} />
+                <Metric icon={Users} label="Matches" value={mutualMatches.length} />
               </div>
             </div>
+          </section>
 
-            <div className="px-4 lg:px-6">
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
-                  <TabsTrigger
-                    value="overview"
-                    className="data-[state=active]:border-b-2"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="photos"
-                    className="data-[state=active]:border-b-2"
-                  >
-                    <ImageIcon className="mr-2 size-4" />
-                    Photos
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="activity"
-                    className="data-[state=active]:border-b-2"
-                  >
-                    <Activity className="mr-2 size-4" />
-                    Activity
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="settings"
-                    className="data-[state=active]:border-b-2"
-                  >
-                    <Settings className="mr-2 size-4" />
-                    Settings
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="mt-6 space-y-6">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                          Profile Views
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">{profileViews.length}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                          Likes Received
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">{profileLikes.length}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                          Fame Rating
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">{user.fameRating ?? 0}</div>
-                        <div className="mt-1 flex items-center gap-1 text-xs text-yellow-500">
-                          <Star className="size-3 fill-current" />
-                          <span>Popular</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {user.interests && user.interests.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Interests</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {user.interests.map((i) => (
-                            <Badge
-                              key={i.id}
-                              variant="secondary"
-                              className="px-3 py-1.5 text-sm"
-                            >
-                              {(i as { interest?: { name: string } }).interest?.name ??
-                                i.interestId}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="photos" className="mt-6">
-                  <div className="space-y-6">
-                    <div className="relative mx-auto aspect-[4/5] max-w-2xl overflow-hidden rounded-2xl bg-muted">
-                      <Image
-                        src={
-                          displayPhotos[selectedPhotoIndex] ??
-                          PROFILE_PHOTO_PLACEHOLDER
-                        }
-                        alt={`Photo ${selectedPhotoIndex + 1}`}
-                        fill
-                        className="object-cover"
-                        priority
-                        unoptimized={
-                          !(displayPhotos[selectedPhotoIndex] ?? "").startsWith("/")
-                        }
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between">
-                        <span className="text-sm font-medium text-white">
-                          {displayPhotos.length > 0
-                            ? `${selectedPhotoIndex + 1} / ${displayPhotos.length}`
-                            : "No photos"}
-                        </span>
-                        <div className="flex gap-2">
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleUploadPhoto}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="backdrop-blur-sm"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                          >
-                            <Camera className="mr-2 size-4" />
-                            Add
-                          </Button>
-                        </div>
+          <section className="grid gap-5 lg:grid-cols-[1fr_380px]">
+            <div className="space-y-5">
+              <Card className="rounded-lg">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">Photo set</CardTitle>
+                  <Badge variant="outline">{photos.length}/5 photos</Badge>
+                </CardHeader>
+                <CardContent>
+                  {photos.length === 0 ? (
+                    <div className="grid min-h-44 place-items-center rounded-lg border border-dashed text-center text-sm text-muted-foreground">
+                      <div>
+                        <Camera className="mx-auto mb-2 size-6" />
+                        Add at least one picture to unlock the full Matcha experience.
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-5 gap-2">
-                      {photos.map((photo, index) => (
-                        <div key={photo.id} className="group relative">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPhotoIndex(index)}
-                            className={`relative aspect-[3/4] w-full overflow-hidden rounded-lg border-2 transition-all ${
-                              selectedPhotoIndex === index
-                                ? "border-primary ring-2 ring-primary/20"
-                                : "border-transparent opacity-60 hover:opacity-100"
-                            }`}
-                          >
-                            <Image
-                              src={photo.url}
-                              alt={`Thumbnail ${index + 1}`}
-                              fill
-                              className="object-cover"
-                              unoptimized={!photo.url.startsWith("/")}
-                            />
-                          </button>
-                          <div className="absolute right-1 bottom-1 left-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                      {photos.map((photo) => (
+                        <div key={photo.id} className="group relative aspect-[3/4] overflow-hidden rounded-lg border bg-muted">
+                          <Image src={resolveProfileMediaUrl(photo.url)} alt="Profile photo" fill className="object-cover" sizes="180px" />
+                          <div className="absolute inset-x-2 top-2 flex justify-between gap-2">
+                            {photo.isMain ? <Badge className="bg-black/65 text-white">Main</Badge> : <span />}
+                          </div>
+                          <div className="absolute inset-x-2 bottom-2 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                             {!photo.isMain && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="h-7 flex-1 text-xs"
-                                onClick={() => handleSetMainPhoto(photo.id)}
-                              >
-                                Set main
+                              <Button size="sm" variant="secondary" className="h-8 flex-1" onClick={() => handleSetMainPhoto(photo.id)}>
+                                Main
                               </Button>
                             )}
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleDeletePhoto(photo.id)}
-                            >
-                              Delete
+                            <Button size="sm" variant="destructive" className="h-8 px-2" onClick={() => handleDeletePhoto(photo.id)}>
+                              <Trash2 className="size-4" />
                             </Button>
                           </div>
                         </div>
                       ))}
                     </div>
+                  )}
+                  <input ref={dialogFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadPhoto} />
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-lg">
+                <CardHeader>
+                  <CardTitle className="text-base">Complete profile details</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-5 md:grid-cols-2">
+                  <Detail label="First name" value={user.firstName} />
+                  <Detail label="Last name" value={user.lastName} />
+                  <Detail label="Username" value={`@${user.userName}`} />
+                  <Detail label="Email" value={user.email} />
+                  <Detail label="Age" value={age != null ? `${age}` : "Not set"} />
+                  <Detail label="Gender" value={genderLabel(user.gender)} />
+                  <Detail label="Sexual preferences" value={preferenceLabel(user.lookingFor ?? user.preferredGender)} />
+                  <Detail label="Approximate location" value={location} />
+                  <div className="md:col-span-2">
+                    <Detail label="Biography" value={user.biography || "Not set"} />
                   </div>
-                </TabsContent>
-
-                <TabsContent value="activity" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Recent Activity</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {activity.length === 0 ? (
-                        <p className="py-4 text-sm text-muted-foreground">
-                          No recent activity yet.
-                        </p>
+                  <div className="md:col-span-2">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Interests</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedInterestNames.length > 0 ? (
+                        selectedInterestNames.map((interest) => <Badge key={interest} variant="secondary">{interest}</Badge>)
                       ) : (
-                        <div className="space-y-4">
-                          {activity.map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-start gap-4 rounded-lg p-4 transition-colors hover:bg-muted/50"
-                            >
-                              <Avatar className="size-10">
-                                <AvatarImage src={item.avatar} alt={item.user} />
-                                <AvatarFallback>
-                                  <User className="size-5" />
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold">{item.user}</span>
-                                  <span className="text-muted-foreground">
-                                    {item.action}
-                                  </span>
-                                </div>
-                              </div>
-                              <Badge
-                                variant={
-                                  item.type === "like" ? "secondary" : "outline"
-                                }
-                              >
-                                {item.type}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
+                        <span className="text-sm text-muted-foreground">No interests selected.</span>
                       )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <TabsContent value="settings" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Profile Settings</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Manage your profile settings, privacy, and preferences here.
-                      </p>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => router.push("/browse")}
-                      >
-                        <Heart className="mr-2 size-4" />
-                        Matching Preferences
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+              <div className="grid gap-5 md:grid-cols-3">
+                <PeoplePanel title="Visitors" people={profileViews} empty="No profile visitors yet." kind="viewer" />
+                <PeoplePanel title="Likes received" people={profileLikes} empty="No likes received yet." kind="summary" />
+                <PeoplePanel title="Matches" people={mutualMatches} empty="No matches yet." kind="summary" matched />
+              </div>
             </div>
-          </div>
+
+            <aside className="space-y-5">
+              <Card className="rounded-lg">
+                <CardHeader>
+                  <CardTitle className="text-base">Profile completion</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Completion</span>
+                      <strong>{completion.percent}%</strong>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full bg-primary" style={{ width: `${completion.percent}%` }} />
+                    </div>
+                  </div>
+                  {completion.missing.length > 0 ? (
+                    <p className="text-sm text-muted-foreground">Missing: {completion.missing.join(", ")}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Your profile has all core Matcha fields.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-lg">
+                <CardHeader>
+                  <CardTitle className="text-base">Location status</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <StatusRow icon={Navigation} label="GPS consent" value={hasGps ? "Granted" : "Manual / not granted"} />
+                  <StatusRow icon={MapPin} label="Approximate place" value={location} />
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    Public profiles only show approximate city or neighborhood, never exact GPS coordinates.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-lg">
+                <CardHeader>
+                  <CardTitle className="text-base">Recent activity</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {activity.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No recent profile activity yet.</p>
+                  ) : (
+                    activity.slice(0, 8).map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 rounded-lg border p-3">
+                        <Avatar className="size-9">
+                          <AvatarImage src={item.avatar} />
+                          <AvatarFallback><User className="size-4" /></AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{item.user}</p>
+                          <p className="text-xs text-muted-foreground">{item.action}</p>
+                        </div>
+                        <Badge variant="outline">{item.type}</Badge>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </aside>
+          </section>
         </div>
-      </div>
+      </main>
     </AuthenticatedShell>
+  )
+}
+
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} value={value} onChange={(event) => onChange(event.target.value)} />
+    </div>
+  )
+}
+
+function Metric({ icon: Icon, label, value }: { icon: typeof Star; label: string; value: number }) {
+  return (
+    <div className="rounded-lg border bg-background/85 p-4">
+      <Icon className="mb-3 size-4 text-muted-foreground" />
+      <p className="text-2xl font-semibold">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm">{value}</p>
+    </div>
+  )
+}
+
+function StatusRow({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border p-3">
+      <Icon className="mt-0.5 size-4 text-muted-foreground" />
+      <div>
+        <p className="font-medium">{label}</p>
+        <p className="text-muted-foreground">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function PeoplePanel({
+  title,
+  people,
+  empty,
+  kind,
+  matched = false,
+}: {
+  title: string
+  people: Array<ProfileViewerUser | ProfileSummaryUser>
+  empty: string
+  kind: "viewer" | "summary"
+  matched?: boolean
+}) {
+  return (
+    <Card className="rounded-lg">
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {people.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{empty}</p>
+        ) : (
+          people.slice(0, 6).map((person, index) => {
+            const summary = person as ProfileSummaryUser
+            const name =
+              kind === "summary"
+                ? profileSummaryDisplayName(summary)
+                : profileViewerDisplayName(person)
+            const location = kind === "summary" ? profileSummaryLocation(summary) : null
+            const href = person.id ? `/users/${person.id}` : null
+            return (
+              <div key={person.id || index} className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/40">
+                <Avatar className="size-10">
+                  <AvatarImage src={resolveProfileMediaUrl(person.profilePicture)} />
+                  <AvatarFallback><User className="size-4" /></AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{location || (person.age ? `${person.age} years old` : "SparkDates member")}</p>
+                </div>
+                {href && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={href}>View</Link>
+                  </Button>
+                )}
+                {matched && (
+                  <Button size="icon" variant="ghost" asChild>
+                    <Link href="/messages"><MessageCircle className="size-4" /></Link>
+                  </Button>
+                )}
+              </div>
+            )
+          })
+        )}
+        {people.length > 6 && (
+          <>
+            <Separator />
+            <p className="text-xs text-muted-foreground">Showing latest 6 of {people.length}.</p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }

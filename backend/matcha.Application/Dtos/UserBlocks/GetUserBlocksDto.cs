@@ -1,4 +1,4 @@
-﻿namespace matcha.Application.Dtos.UserBlocks
+﻿namespace sparkdates.Application.Dtos.UserBlocks
 {
     public class GetUserBlocksDto
     {

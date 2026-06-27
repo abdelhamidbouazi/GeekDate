@@ -9,21 +9,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{BCA9D17E-3
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "External", "External", "{1B1783E1-E7C7-458D-969C-8412BB1B2A25}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "matcha.Application", "matcha.Application\matcha.Application.csproj", "{943FC270-78E7-47E5-9948-076DC12C63B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sparkdates.Application", "sparkdates.Application\sparkdates.Application.csproj", "{943FC270-78E7-47E5-9948-076DC12C63B3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "matcha.Domain", "matcha.Domain\matcha.Domain.csproj", "{7B124A6D-03C8-4A14-958A-924BB11A4A0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sparkdates.Domain", "sparkdates.Domain\sparkdates.Domain.csproj", "{7B124A6D-03C8-4A14-958A-924BB11A4A0A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "matcha.Infrastructure", "matcha.Infrastructure\matcha.Infrastructure.csproj", "{25CA953D-6931-42E8-A719-98236B283D38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sparkdates.Infrastructure", "sparkdates.Infrastructure\sparkdates.Infrastructure.csproj", "{25CA953D-6931-42E8-A719-98236B283D38}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "matcha.API", "matcha.API\matcha.API.csproj", "{A882743C-B613-4D3D-B1F5-E515562CC845}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sparkdates.API", "sparkdates.API\sparkdates.API.csproj", "{A882743C-B613-4D3D-B1F5-E515562CC845}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "matcha.DomainServices", "matcha.DomainServices\matcha.DomainServices.csproj", "{2A1FF985-BCDB-411F-9AF7-BA88B684947E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sparkdates.DomainServices", "sparkdates.DomainServices\sparkdates.DomainServices.csproj", "{2A1FF985-BCDB-411F-9AF7-BA88B684947E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5FAE69E9-6245-4429-8B36-B700C968D968}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "matcha.Shared", "matcha.Shared\matcha.Shared.csproj", "{F5422897-D0CA-438E-BC54-3C2F7D95DE0E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sparkdates.Shared", "sparkdates.Shared\sparkdates.Shared.csproj", "{F5422897-D0CA-438E-BC54-3C2F7D95DE0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matcha.AppHost", "Matcha.AppHost\Matcha.AppHost.csproj", "{76363335-6DF6-4418-8F27-60C1DF7C01D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDates.AppHost", "SparkDates.AppHost\SparkDates.AppHost.csproj", "{76363335-6DF6-4418-8F27-60C1DF7C01D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
