@@ -46,7 +46,6 @@ namespace sparkdates.Infrastructure.Repositories
                     MapChildToParent = (parent, child) =>
                     {
                         if (parent.Interests == null) parent.Interests = new List<UserInterest>();
-                        parent.Interests.Add(child);
                         if (child != null)
                             parent.Interests.Add(child);
                     },
@@ -181,7 +180,6 @@ namespace sparkdates.Infrastructure.Repositories
                     MapChildToParent = (parent, child) =>
                     {
                         if (parent.Interests == null) parent.Interests = new List<UserInterest>();
-                        parent.Interests.Add(child);
                         if (child != null)
                             parent.Interests.Add(child);
                     },

@@ -46,9 +46,13 @@ namespace sparkdates.DomainServices.Services.UserService
                     "This profile is unavailable.");
             }
 
-            var user = await _unitOfWork.GetRepository<IUserRepositoryAsync>().GetUserWithPhotosById(userId);
+            var userRepo = _unitOfWork.GetRepository<IUserRepositoryAsync>();
+            var user = await userRepo.GetUserWithPhotosById(userId);
 
             if (user == null) throw new NotFoundException("Could not find user");
+
+            var userWithInterests = await userRepo.GetUserWithInterestsByIdAsync(userId);
+            user.Interests = userWithInterests?.Interests;
 
             return user;
         }

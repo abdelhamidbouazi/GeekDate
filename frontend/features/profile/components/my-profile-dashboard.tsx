@@ -499,14 +499,14 @@ export function MyProfileDashboard() {
               </Card>
 
               <div className="grid gap-5 md:grid-cols-3">
-                <PeoplePanel title="Visitors" people={profileViews} empty="No profile visitors yet." kind="viewer" />
+                {/* <PeoplePanel title="Visitors" people={profileViews} empty="No profile visitors yet." kind="viewer" /> */}
                 <PeoplePanel title="Likes received" people={profileLikes} empty="No likes received yet." kind="summary" />
                 <PeoplePanel title="Matches" people={mutualMatches} empty="No matches yet." kind="summary" matched />
               </div>
             </div>
 
             <aside className="space-y-5">
-              <Card className="rounded-lg">
+              {/* <Card className="rounded-lg">
                 <CardHeader>
                   <CardTitle className="text-base">Profile completion</CardTitle>
                 </CardHeader>
@@ -526,9 +526,9 @@ export function MyProfileDashboard() {
                     <p className="text-sm text-muted-foreground">Your profile has all core Matcha fields.</p>
                   )}
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              <Card className="rounded-lg">
+              {/* <Card className="rounded-lg">
                 <CardHeader>
                   <CardTitle className="text-base">Location status</CardTitle>
                 </CardHeader>
@@ -539,7 +539,7 @@ export function MyProfileDashboard() {
                     Public profiles only show approximate city or neighborhood, never exact GPS coordinates.
                   </p>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card className="rounded-lg">
                 <CardHeader>
