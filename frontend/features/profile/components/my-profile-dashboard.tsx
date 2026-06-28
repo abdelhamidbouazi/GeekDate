@@ -499,7 +499,7 @@ export function MyProfileDashboard() {
               </Card>
 
               <div className="grid gap-5 md:grid-cols-3">
-                {/* <PeoplePanel title="Visitors" people={profileViews} empty="No profile visitors yet." kind="viewer" /> */}
+                <PeoplePanel title="Visitors" people={profileViews} empty="No profile visitors yet." kind="viewer" />
                 <PeoplePanel title="Likes received" people={profileLikes} empty="No likes received yet." kind="summary" />
                 <PeoplePanel title="Matches" people={mutualMatches} empty="No matches yet." kind="summary" matched />
               </div>
