@@ -18,6 +18,7 @@ namespace sparkdates.Application.Interfaces.Services
         Task<bool> LikeUserAsync(Guid userIdToLike);
         Task<bool> UnLikeUserAsync(Guid userIdToUnLike);
         Task<bool> BlockUserAsync(Guid userIdToLike);
+        Task<bool> UnblockUserAsync(Guid userIdToUnblock);
         Task<IEnumerable<UserProfileLikedDto>> GetWhoLikedMeAsync(Guid UserId);
         Task<IEnumerable<UserProfileLikedDto>> GetLikesGivenAsync(Guid userId);
         Task<IEnumerable<UserDto>> GetWhoViewedMeAsync(Guid userId);

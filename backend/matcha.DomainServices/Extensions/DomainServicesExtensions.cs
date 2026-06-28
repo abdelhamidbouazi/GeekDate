@@ -1,5 +1,6 @@
-﻿using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services;
 using sparkdates.DomainServices.Chat;
+using sparkdates.DomainServices.Services;
 using sparkdates.DomainServices.Services.InterestService;
 using sparkdates.DomainServices.Services.Message;
 using sparkdates.DomainServices.Services.UserInterestsService;
@@ -22,6 +23,7 @@ namespace sparkdates.DomainServices.Extensions
             services.AddScoped<IMatchmakingServiceAsync, MatchmakingServiceAsync>();
             services.AddScoped<IUserSearchServiceAsync, UserSearchServiceAsync>();
             services.AddScoped<IUserSearchPreferencesServiceAsync, UserSearchPreferencesServiceAsync>();
+            services.AddScoped<IBlockGuardServiceAsync, BlockGuardServiceAsync>();
             services.AddScoped<IConversationServiceAsync, ConversationServiceAsync>();
             services.AddScoped<IMatchServiceAsync, MatchServiceAsync>();
             services.AddScoped<IMessageServiceAsync, MessageServiceAsync>();

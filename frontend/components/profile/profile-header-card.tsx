@@ -101,7 +101,7 @@ export function ProfileHeaderCard({
 
           {isOwner && (
             <Button variant="outline" className="shrink-0" asChild>
-              <Link href="/settings?tab=profile">
+              <Link href="/profile">
                 <Edit className="mr-2 size-4" />
                 Edit Profile
               </Link>

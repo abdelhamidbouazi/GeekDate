@@ -16,9 +16,12 @@ import {
   Search,
   Sparkles,
   WifiOff,
+  ChevronUp,
+  ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { ApiError } from "@/lib/api/client"
 import { chatApi, type Conversation, type Message } from "@/lib/services/chat-api"
 import {
   profileApi,
@@ -36,6 +39,8 @@ import {
   HubConnectionState,
   LogLevel,
 } from "@microsoft/signalr"
+
+const PAGE_SIZE = 20
 
 function formatTime(dateStr: string) {
   try {
@@ -70,17 +75,30 @@ function sortMessagesAsc(msgs: Message[]): Message[] {
   )
 }
 
+function isRecentlyActive(lastActive?: string | null): boolean {
+  if (!lastActive) return false
+  const timestamp = new Date(lastActive + (lastActive.endsWith("Z") ? "" : "Z")).getTime()
+  if (Number.isNaN(timestamp)) return false
+  return Date.now() - timestamp < 3 * 60 * 1000
+}
+
 export default function MessagesPage() {
   const currentUserId = getUserIdFromToken()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({})
   const [partnerAvatars, setPartnerAvatars] = useState<Record<string, string>>({})
+  const [partnerLastActive, setPartnerLastActive] = useState<Record<string, string | null>>({})
+  const [onlineUserIds, setOnlineUserIds] = useState<Record<string, boolean>>({})
+  const [typingConversationIds, setTypingConversationIds] = useState<Record<string, boolean>>({})
   const [matchedUsers, setMatchedUsers] = useState<ProfileViewerUser[]>([])
   const [matchedLoading, setMatchedLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [startingConversationWith, setStartingConversationWith] = useState<string | null>(null)
   const [selected, setSelected] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [messagesPage, setMessagesPage] = useState(1)
+  const [hasMoreMessages, setHasMoreMessages] = useState(false)
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false)
   const [threadBlocked, setThreadBlocked] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
@@ -92,6 +110,9 @@ export default function MessagesPage() {
   const lastJoinedConversationIdRef = useRef<string | null>(null)
   const messagesPanelRef = useRef<HTMLDivElement | null>(null)
   const shouldStickToBottomRef = useRef(true)
+  const typingTimeoutRef = useRef<number | null>(null)
+  const heartbeatRef = useRef<number | null>(null)
+  const localTypingRef = useRef(false)
 
   const getOtherUserId = useCallback(
     (c: Conversation) => (currentUserId === c.user1Id ? c.user2Id : c.user1Id),
@@ -112,6 +133,8 @@ export default function MessagesPage() {
       setConversations(list)
       const names: Record<string, string> = {}
       const avatars: Record<string, string> = {}
+      const active: Record<string, string | null> = {}
+      const online: Record<string, boolean> = {}
       for (const c of list) {
         const otherId = getOtherUserId(c)
         try {
@@ -122,13 +145,19 @@ export default function MessagesPage() {
             user.userName ||
             "User"
           avatars[otherId] = main?.url ?? user.photoProfileUrl ?? AVATAR_PLACEHOLDER_SMALL
+          active[otherId] = user.lastActive ?? null
+          online[otherId] = isRecentlyActive(user.lastActive)
         } catch {
           names[otherId] = "User"
           avatars[otherId] = AVATAR_PLACEHOLDER_SMALL
+          active[otherId] = null
+          online[otherId] = false
         }
       }
       setPartnerNames(names)
       setPartnerAvatars(avatars)
+      setPartnerLastActive(active)
+      setOnlineUserIds(online)
       setSelected((prev) => {
         if (list.length === 0) return null
         if (prev && list.some((c) => c.id === prev.id)) return prev
@@ -164,14 +193,24 @@ export default function MessagesPage() {
 
   const loadMessages = useCallback(async (conv: Conversation) => {
     setMessagesLoading(true)
+    setThreadBlocked(false)
+    setMessages([])
+    setMessagesPage(1)
+    setHasMoreMessages(false)
     try {
-      const { messages: raw, isBlocked } = await chatApi.getMessages(conv.id)
-      setMessages(sortMessagesAsc(raw))
+      const { messages: raw, isBlocked } = await chatApi.getMessages(conv.id, 1, PAGE_SIZE)
+      const sorted = sortMessagesAsc(raw)
+      setMessages(sorted)
       setThreadBlocked(isBlocked)
+      setHasMoreMessages(raw.length >= PAGE_SIZE)
       shouldStickToBottomRef.current = true
       chatApi.markAsRead(conv.id).catch(() => {})
     } catch (err) {
       setMessages([])
+      if (err instanceof ApiError && err.status === 403) {
+        setThreadBlocked(true)
+        return
+      }
       setThreadBlocked(false)
       toast.error(err instanceof Error ? err.message : "Could not load messages.")
     } finally {
@@ -185,14 +224,49 @@ export default function MessagesPage() {
     panel.scrollTo({ top: panel.scrollHeight, behavior })
   }, [])
 
+  const stopTyping = useCallback(async () => {
+    if (!localTypingRef.current) return
+    localTypingRef.current = false
+    if (typingTimeoutRef.current != null) {
+      window.clearTimeout(typingTimeoutRef.current)
+      typingTimeoutRef.current = null
+    }
+    const conn = hubRef.current
+    const conversationId = selectedConversationIdRef.current
+    if (!conn || !conversationId || conn.state !== HubConnectionState.Connected) return
+    await conn.invoke("UserStoppedTyping", conversationId).catch(() => {})
+  }, [])
+
+  const markTyping = useCallback(() => {
+    const conn = hubRef.current
+    const conversationId = selectedConversationIdRef.current
+    if (!conn || !conversationId || conn.state !== HubConnectionState.Connected || threadBlocked) {
+      return
+    }
+    if (!localTypingRef.current) {
+      localTypingRef.current = true
+      void conn.invoke("UserTyping", conversationId).catch(() => {})
+    }
+    if (typingTimeoutRef.current != null) {
+      window.clearTimeout(typingTimeoutRef.current)
+    }
+    typingTimeoutRef.current = window.setTimeout(() => {
+      void stopTyping()
+    }, 1500)
+  }, [stopTyping, threadBlocked])
+
   useEffect(() => {
+    void stopTyping()
     if (selected) {
       selectedConversationIdRef.current = selected.id
       loadMessages(selected)
     } else {
       selectedConversationIdRef.current = null
     }
-  }, [selected, loadMessages])
+    return () => {
+      void stopTyping()
+    }
+  }, [selected, loadMessages, stopTyping])
 
   useEffect(() => {
     if (!selected) return
@@ -200,6 +274,12 @@ export default function MessagesPage() {
     const frame = requestAnimationFrame(() => scrollMessagesToBottom("auto"))
     return () => cancelAnimationFrame(frame)
   }, [messages, selected, scrollMessagesToBottom])
+
+  useEffect(() => {
+    if (!selected || !typingConversationIds[selected.id]) return
+    const frame = requestAnimationFrame(() => scrollMessagesToBottom("smooth"))
+    return () => cancelAnimationFrame(frame)
+  }, [typingConversationIds, selected, scrollMessagesToBottom])
 
   useEffect(() => {
     if (!currentUserId || typeof window === "undefined") return
@@ -219,6 +299,39 @@ export default function MessagesPage() {
       if (id) await conn.invoke("JoinConversation", id).catch(() => {})
     })
     conn.onclose(() => setRealtimeConnected(false))
+
+    conn.on("UserOnline", (payload: unknown) => {
+      const obj = (payload ?? {}) as Record<string, unknown>
+      const userId = String(obj.userId ?? obj.UserId ?? "")
+      if (!userId) return
+      setOnlineUserIds((prev) => ({ ...prev, [userId]: true }))
+    })
+
+    conn.on("UserOffline", (payload: unknown) => {
+      const obj = (payload ?? {}) as Record<string, unknown>
+      const userId = String(obj.userId ?? obj.UserId ?? "")
+      if (!userId) return
+      setOnlineUserIds((prev) => ({ ...prev, [userId]: false }))
+      setTypingConversationIds((prev) =>
+        Object.fromEntries(Object.keys(prev).map((id) => [id, false]))
+      )
+    })
+
+    conn.on("UserTyping", (payload: unknown) => {
+      const obj = (payload ?? {}) as Record<string, unknown>
+      const userId = String(obj.userId ?? obj.UserId ?? "")
+      const conversationId = String(obj.conversationId ?? obj.ConversationId ?? "")
+      if (!conversationId || !userId || userId === currentUserId) return
+      setTypingConversationIds((prev) => ({ ...prev, [conversationId]: true }))
+    })
+
+    conn.on("UserStoppedTyping", (payload: unknown) => {
+      const obj = (payload ?? {}) as Record<string, unknown>
+      const userId = String(obj.userId ?? obj.UserId ?? "")
+      const conversationId = String(obj.conversationId ?? obj.ConversationId ?? "")
+      if (!conversationId || !userId || userId === currentUserId) return
+      setTypingConversationIds((prev) => ({ ...prev, [conversationId]: false }))
+    })
 
     conn.on("ReceiveMessage", (payload: unknown) => {
       const obj = (payload ?? {}) as Record<string, unknown>
@@ -253,9 +366,27 @@ export default function MessagesPage() {
       })
     })
 
-    conn.start().then(() => setRealtimeConnected(true)).catch(() => setRealtimeConnected(false))
+    conn.start()
+      .then(() => {
+        setRealtimeConnected(true)
+        heartbeatRef.current = window.setInterval(() => {
+          if (hubRef.current?.state === HubConnectionState.Connected) {
+            void hubRef.current.invoke("Heartbeat").catch(() => {})
+          }
+        }, 60_000)
+      })
+      .catch(() => setRealtimeConnected(false))
 
     return () => {
+      if (heartbeatRef.current != null) {
+        window.clearInterval(heartbeatRef.current)
+        heartbeatRef.current = null
+      }
+      if (typingTimeoutRef.current != null) {
+        window.clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
+      localTypingRef.current = false
       const c = hubRef.current
       hubRef.current = null
       c?.stop().catch(() => {})
@@ -278,6 +409,39 @@ export default function MessagesPage() {
     }
     void sync()
   }, [selected, realtimeConnected])
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!selected || loadingMoreMessages) return
+    const nextPage = messagesPage + 1
+    const panel = messagesPanelRef.current
+    const prevScrollHeight = panel?.scrollHeight ?? 0
+    setLoadingMoreMessages(true)
+    try {
+      const { messages: raw } = await chatApi.getMessages(selected.id, nextPage, PAGE_SIZE)
+      if (raw.length === 0) {
+        setHasMoreMessages(false)
+        return
+      }
+      const sorted = sortMessagesAsc(raw)
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id))
+        const newOnes = sorted.filter((m) => !existingIds.has(m.id))
+        return sortMessagesAsc([...newOnes, ...prev])
+      })
+      setMessagesPage(nextPage)
+      setHasMoreMessages(raw.length >= PAGE_SIZE)
+      // Restore scroll position so viewport stays on same message
+      requestAnimationFrame(() => {
+        if (panel) {
+          panel.scrollTop = panel.scrollHeight - prevScrollHeight
+        }
+      })
+    } catch {
+      toast.error("Could not load older messages.")
+    } finally {
+      setLoadingMoreMessages(false)
+    }
+  }, [selected, loadingMoreMessages, messagesPage])
 
   const startConversationWithUser = useCallback(
     async (user: ProfileViewerUser) => {
@@ -314,6 +478,7 @@ export default function MessagesPage() {
     const otherId = getOtherUserId(selected)
     setSending(true)
     try {
+      await stopTyping()
       const sent = await chatApi.sendMessage(otherId, newMessage.trim())
       if (sent) {
         setMessages((prev) => {
@@ -324,11 +489,16 @@ export default function MessagesPage() {
       }
       setNewMessage("")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Message could not be sent.")
+      if (err instanceof ApiError && err.status === 403) {
+        setThreadBlocked(true)
+        toast.error("This conversation is unavailable.")
+      } else {
+        toast.error(err instanceof Error ? err.message : "Message could not be sent.")
+      }
     } finally {
       setSending(false)
     }
-  }, [selected, newMessage, sending, getOtherUserId, threadBlocked])
+  }, [selected, newMessage, sending, getOtherUserId, threadBlocked, stopTyping])
 
   const handleMessagesScroll = useCallback(() => {
     const panel = messagesPanelRef.current
@@ -350,6 +520,10 @@ export default function MessagesPage() {
   const selectedAvatar = selectedOtherId
     ? partnerAvatars[selectedOtherId] ?? AVATAR_PLACEHOLDER_SMALL
     : AVATAR_PLACEHOLDER_SMALL
+  const selectedPartnerOnline = selectedOtherId
+    ? Boolean(onlineUserIds[selectedOtherId] ?? isRecentlyActive(partnerLastActive[selectedOtherId]))
+    : false
+  const selectedPartnerTyping = selected ? Boolean(typingConversationIds[selected.id]) : false
 
   const query = searchQuery.trim().toLowerCase()
   const filteredConversations = conversations.filter((conv) => {
@@ -363,12 +537,15 @@ export default function MessagesPage() {
   })
 
   return (
-    <AuthenticatedShell sidebarInsetClassName="flex flex-col overflow-hidden">
-      {/* Two-panel messenger layout */}
+    <AuthenticatedShell sidebarInsetClassName="flex flex-col overflow-hidden pb-20 md:pb-0">
+      {/* Two-panel messenger layout — fills the remaining height below SiteHeader */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* ── Left: Conversation list ─────────────────────────── */}
-        <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r bg-background">
+        <aside className={cn(
+          "flex-col overflow-hidden border-r bg-background",
+          selected ? "hidden md:flex md:w-72 md:shrink-0" : "flex w-full md:w-72 md:shrink-0"
+        )}>
 
           {/* Search */}
           <div className="shrink-0 px-3 py-3">
@@ -418,8 +595,8 @@ export default function MessagesPage() {
                               className={cn(
                                 "absolute inset-0 rounded-full",
                                 !hasConvo
-                                  ? "bg-linear-to-br from-pink-500 to-rose-400 p-[2px]"
-                                  : "bg-muted p-[2px]"
+                                  ? "bg-linear-to-br from-pink-500 to-rose-400 p-0.5"
+                                  : "bg-muted p-0.5"
                               )}
                             >
                               <div className="size-full rounded-full overflow-hidden bg-background">
@@ -440,7 +617,7 @@ export default function MessagesPage() {
                               </span>
                             )}
                           </div>
-                          <span className="max-w-[44px] truncate text-[10px] text-muted-foreground">
+                          <span className="max-w-11 truncate text-[10px] text-muted-foreground">
                             {name.split(" ")[0]}
                           </span>
                         </button>
@@ -538,12 +715,26 @@ export default function MessagesPage() {
         </aside>
 
         {/* ── Right: Chat panel ──────────────────────────────── */}
-        <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+        <div className={cn(
+          "min-w-0 min-h-0 overflow-hidden",
+          selected ? "flex-1" : "hidden md:block md:flex-1"
+        )}>
           {selected ? (
-            <>
+            /* Grid layout: header fixed, messages scroll, input fixed */
+            <div className="h-full grid" style={{ gridTemplateRows: "auto 1fr auto" }}>
+
               {/* Chat header */}
-              <div className="shrink-0 flex items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-5 py-3">
-                <Avatar className="size-9">
+              <div className="flex items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4 py-3">
+                {/* Back button — mobile only */}
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="md:hidden -ml-1 shrink-0 rounded-lg p-1.5 hover:bg-muted/60 transition-colors"
+                  aria-label="Back to conversations"
+                >
+                  <ArrowLeft className="size-5" />
+                </button>
+                <Avatar className="size-9 shrink-0">
                   <AvatarImage src={selectedAvatar} alt={selectedName} />
                   <AvatarFallback className="text-xs">{getInitials(selectedName)}</AvatarFallback>
                 </Avatar>
@@ -558,42 +749,74 @@ export default function MessagesPage() {
                       Match
                     </Badge>
                   </div>
-                  <Link
-                    href={`/users/${selectedOtherId}`}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                  >
-                    View profile
-                  </Link>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {selectedPartnerTyping ? (
+                      <span className="text-xs text-primary font-medium">typing...</span>
+                    ) : selectedPartnerOnline ? (
+                      <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
+                        <span className="size-1.5 rounded-full bg-emerald-500 inline-block" />
+                        Online
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Offline</span>
+                    )}
+                    <span className="text-muted-foreground/30 text-xs select-none">·</span>
+                    <Link
+                      href={`/users/${selectedOtherId}`}
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+                    >
+                      View profile
+                    </Link>
+                  </div>
                 </div>
                 {!realtimeConnected && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70 shrink-0">
                     <WifiOff className="size-3.5" />
                     <span className="hidden sm:inline">Offline</span>
                   </div>
                 )}
               </div>
 
-              {/* Messages area */}
+              {/* Messages area — scrollable middle section */}
               <div
                 ref={messagesPanelRef}
-                className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-1.5"
+                className="overflow-y-auto overscroll-contain px-4 py-4"
                 onScroll={handleMessagesScroll}
                 style={{
                   background:
                     "radial-gradient(ellipse 80% 40% at 50% 0%, oklch(0.7 0.08 250 / 0.04), transparent 60%)",
                 }}
               >
+                {/* Load older messages button */}
+                {hasMoreMessages && !messagesLoading && (
+                  <div className="flex justify-center pb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadOlderMessages}
+                      disabled={loadingMoreMessages}
+                      className="gap-1.5 text-xs rounded-full border-dashed"
+                    >
+                      {loadingMoreMessages
+                        ? <Loader2 className="size-3 animate-spin" />
+                        : <ChevronUp className="size-3" />
+                      }
+                      {loadingMoreMessages ? "Loading…" : "Load older messages"}
+                    </Button>
+                  </div>
+                )}
+
                 {threadBlocked && (
                   <Alert variant="destructive" className="mb-4">
                     <AlertDescription>
-                      Messaging is limited to mutual matches. If you just matched, try again in a
-                      moment.
+                      This conversation is unavailable because one of the users blocked the other
+                      or the match is no longer active.
                     </AlertDescription>
                   </Alert>
                 )}
 
                 {messagesLoading ? (
-                  <div className="flex h-full items-center justify-center py-20">
+                  <div className="flex h-40 items-center justify-center">
                     <Loader2 className="size-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : messages.length === 0 ? (
@@ -609,52 +832,76 @@ export default function MessagesPage() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((msg, i) => {
-                    const isMe = String(msg.senderId) === String(currentUserId)
-                    const prevMsg = messages[i - 1]
-                    const showAvatar =
-                      !isMe &&
-                      (!prevMsg || String(prevMsg.senderId) === String(currentUserId))
-                    return (
-                      <div
-                        key={msg.id}
-                        className={cn("flex items-end gap-2", isMe ? "justify-end" : "justify-start")}
-                      >
-                        {!isMe && (
-                          <div className="size-6 shrink-0 mb-0.5">
-                            {showAvatar && (
-                              <Avatar className="size-6">
-                                <AvatarImage src={selectedAvatar} alt={selectedName} />
-                                <AvatarFallback className="text-[9px]">
-                                  {getInitials(selectedName)}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
+                  <div className="space-y-1.5">
+                    {messages.map((msg, i) => {
+                      const isMe = String(msg.senderId) === String(currentUserId)
+                      const prevMsg = messages[i - 1]
+                      const showAvatar =
+                        !isMe &&
+                        (!prevMsg || String(prevMsg.senderId) === String(currentUserId))
+                      return (
+                        <div
+                          key={msg.id}
+                          className={cn(
+                            "flex items-end gap-2 max-w-[72%]",
+                            isMe ? "ml-auto flex-row-reverse" : "mr-auto"
+                          )}
+                        >
+                          {!isMe && (
+                            <div className="size-6 shrink-0 mb-0.5">
+                              {showAvatar && (
+                                <Avatar className="size-6">
+                                  <AvatarImage src={selectedAvatar} alt={selectedName} />
+                                  <AvatarFallback className="text-[9px]">
+                                    {getInitials(selectedName)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                            </div>
+                          )}
+                          <div className={cn("flex flex-col gap-0.5 min-w-0", isMe ? "items-end" : "items-start")}>
+                            <div
+                              className={cn(
+                                "rounded-2xl px-3.5 py-2 text-sm leading-relaxed wrap-break-word",
+                                isMe
+                                  ? "rounded-br-sm bg-primary text-primary-foreground"
+                                  : "rounded-bl-sm bg-muted text-foreground"
+                              )}
+                            >
+                              {msg.messageText}
+                            </div>
+                            <span className="px-1 text-[10px] text-muted-foreground tabular-nums">
+                              {formatTime(msg.sentAt)}
+                            </span>
                           </div>
-                        )}
-                        <div className={cn("flex flex-col gap-0.5", isMe ? "items-end" : "items-start")}>
-                          <div
-                            className={cn(
-                              "max-w-xs rounded-2xl px-3.5 py-2 text-sm leading-relaxed lg:max-w-md",
-                              isMe
-                                ? "rounded-br-sm bg-primary text-primary-foreground"
-                                : "rounded-bl-sm bg-muted text-foreground"
-                            )}
-                          >
-                            {msg.messageText}
-                          </div>
-                          <span className="px-1 text-[10px] text-muted-foreground tabular-nums">
-                            {formatTime(msg.sentAt)}
-                          </span>
                         </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Typing indicator bubble */}
+                {selectedPartnerTyping && (
+                  <div className="flex items-end gap-2 justify-start mt-1.5 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                    <div className="size-6 shrink-0 mb-0.5">
+                      <Avatar className="size-6">
+                        <AvatarImage src={selectedAvatar} alt={selectedName} />
+                        <AvatarFallback className="text-[9px]">{getInitials(selectedName)}</AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="rounded-2xl rounded-bl-sm bg-muted px-4 py-3.5">
+                      <div className="flex items-center gap-1">
+                        <span className="size-2 rounded-full bg-foreground/40 animate-bounce animation-duration-[1.2s] [animation-delay:0ms]" />
+                        <span className="size-2 rounded-full bg-foreground/40 animate-bounce animation-duration-[1.2s] [animation-delay:200ms]" />
+                        <span className="size-2 rounded-full bg-foreground/40 animate-bounce animation-duration-[1.2s] [animation-delay:400ms]" />
                       </div>
-                    )
-                  })
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Input bar */}
-              <div className="shrink-0 border-t bg-background px-5 py-3">
+              {/* Input bar — fixed at bottom */}
+              <div className="border-t bg-background px-4 py-3">
                 <form
                   className="flex items-center gap-2"
                   onSubmit={(e) => { e.preventDefault(); void handleSend() }}
@@ -662,7 +909,16 @@ export default function MessagesPage() {
                   <Input
                     placeholder={threadBlocked ? "Messaging unavailable" : `Message ${selectedName}…`}
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e) => {
+                      const next = e.target.value
+                      setNewMessage(next)
+                      if (next.trim()) {
+                        markTyping()
+                      } else {
+                        void stopTyping()
+                      }
+                    }}
+                    onBlur={() => { void stopTyping() }}
                     disabled={sending || threadBlocked}
                     className="flex-1 rounded-full bg-muted/50 border-transparent focus-visible:border-input focus-visible:bg-background"
                   />
@@ -680,10 +936,11 @@ export default function MessagesPage() {
                   </Button>
                 </form>
               </div>
-            </>
+
+            </div>
           ) : (
-            /* Empty state */
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center p-8">
+            /* No conversation selected — empty state */
+            <div className="flex h-full flex-col items-center justify-center gap-4 text-center p-8">
               <div
                 className="rounded-full p-6 ring-1 ring-border"
                 style={{

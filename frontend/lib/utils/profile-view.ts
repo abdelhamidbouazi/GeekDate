@@ -12,7 +12,7 @@ import {
   type ProfileViewerUser,
 } from "@/lib/services/profile-api"
 
-const ONLINE_THRESHOLD_MINUTES = 15
+const ONLINE_THRESHOLD_MINUTES = 5
 
 export function isUserOnline(
   lastActive: string | null | undefined,

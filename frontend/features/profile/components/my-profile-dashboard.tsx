@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import {
+  Ban,
   Camera,
   Check,
   Edit,
@@ -17,6 +18,7 @@ import {
   Star,
   Trash2,
   User,
+  UserX,
   Users,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -84,7 +86,6 @@ function preferenceLabel(value: number | string): string {
   const n = Number(value)
   if (n === 1) return "Men"
   if (n === 2) return "Women"
-  if (n === 3) return "Everyone"
   return "Not specified"
 }
 
@@ -117,6 +118,7 @@ export function MyProfileDashboard() {
     profileViews,
     profileLikes,
     mutualMatches,
+    blockedUsers,
     loading,
     error,
     uploading,
@@ -127,6 +129,7 @@ export function MyProfileDashboard() {
     handleUploadPhoto,
     handleSetMainPhoto,
     handleDeletePhoto,
+    handleUnblockUser,
     activity,
   } = useMyProfile()
 
@@ -139,8 +142,8 @@ export function MyProfileDashboard() {
     firstName: "",
     lastName: "",
     email: "",
-    gender: "0",
-    sexualPreferences: "0",
+    gender: "",
+    sexualPreferences: "",
     biography: "",
     city: "",
     interestIds: [],
@@ -182,8 +185,11 @@ export function MyProfileDashboard() {
       firstName: user.firstName ?? "",
       lastName: user.lastName ?? "",
       email: user.email ?? "",
-      gender: String(user.gender ?? 0),
-      sexualPreferences: String(user.lookingFor ?? user.preferredGender ?? 0),
+      gender: user.gender && user.gender > 0 ? String(user.gender) : "",
+      sexualPreferences:
+        (user.lookingFor ?? user.preferredGender ?? 0) > 0
+          ? String(user.lookingFor ?? user.preferredGender)
+          : "",
       biography: user.biography ?? "",
       city: user.city ?? "",
       interestIds: extractInterestIds(user),
@@ -205,6 +211,14 @@ export function MyProfileDashboard() {
       toast.error("First name, last name, and email are required.")
       return
     }
+    if (Number(edit.gender) <= 0 || Number(edit.sexualPreferences) <= 0) {
+      toast.error("Gender and sexual preference are required.")
+      return
+    }
+    if (edit.interestIds.length === 0) {
+      toast.error("Select at least one interest.")
+      return
+    }
     setSaving(true)
     try {
       await profileApi.updateProfile({
@@ -212,9 +226,9 @@ export function MyProfileDashboard() {
         firstName: edit.firstName.trim(),
         lastName: edit.lastName.trim(),
         email: edit.email.trim(),
-        gender: Number(edit.gender) || 0,
+        gender: Number(edit.gender),
         biography: edit.biography.trim(),
-        sexualPreferences: Number(edit.sexualPreferences) || 0,
+        sexualPreferences: Number(edit.sexualPreferences),
         userInterestIds: edit.interestIds,
         city: edit.city.trim(),
       })
@@ -335,9 +349,8 @@ export function MyProfileDashboard() {
                             <div className="space-y-2">
                               <Label>Gender</Label>
                               <Select value={edit.gender} onValueChange={(value) => setEdit((s) => ({ ...s, gender: value }))}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="0">Not specified</SelectItem>
                                   <SelectItem value="1">Man</SelectItem>
                                   <SelectItem value="2">Woman</SelectItem>
                                 </SelectContent>
@@ -346,12 +359,10 @@ export function MyProfileDashboard() {
                             <div className="space-y-2">
                               <Label>Sexual preferences</Label>
                               <Select value={edit.sexualPreferences} onValueChange={(value) => setEdit((s) => ({ ...s, sexualPreferences: value }))}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="0">Not specified</SelectItem>
                                   <SelectItem value="1">Men</SelectItem>
                                   <SelectItem value="2">Women</SelectItem>
-                                  <SelectItem value="3">Everyone</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -527,6 +538,55 @@ export function MyProfileDashboard() {
                   <p className="text-xs leading-5 text-muted-foreground">
                     Public profiles only show approximate city or neighborhood, never exact GPS coordinates.
                   </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-lg">
+                <CardHeader>
+                  <CardTitle className="text-base">Blocked users</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {blockedUsers.length === 0 ? (
+                    <div className="flex items-start gap-3 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                      <Ban className="mt-0.5 size-4" />
+                      <p>No blocked users.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {blockedUsers.map((blockedUser) => {
+                        const name =
+                          [blockedUser.firstName, blockedUser.lastName]
+                            .filter(Boolean)
+                            .join(" ") || blockedUser.userName || "Member"
+                        return (
+                          <div
+                            key={blockedUser.blockedUserId}
+                            className="flex items-center gap-3 rounded-lg border p-3"
+                          >
+                            <Avatar className="size-9">
+                              <AvatarImage src={resolveProfileMediaUrl(blockedUser.profilePicture)} alt={name} />
+                              <AvatarFallback>
+                                <UserX className="size-4" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{name}</p>
+                              {blockedUser.userName && (
+                                <p className="truncate text-xs text-muted-foreground">@{blockedUser.userName}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUnblockUser(blockedUser.blockedUserId)}
+                            >
+                              Unblock
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

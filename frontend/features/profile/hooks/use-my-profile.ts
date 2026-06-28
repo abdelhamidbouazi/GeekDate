@@ -7,6 +7,7 @@ import {
   resolveProfileMediaUrl,
   profileViewerDisplayName,
   type AppUser,
+  type BlockedUserSummary,
   type ProfileSummaryUser,
   type ProfileViewerUser,
 } from "@/lib/services/profile-api"
@@ -17,6 +18,7 @@ export function useMyProfile() {
   const [profileViews, setProfileViews] = useState<ProfileViewerUser[]>([])
   const [profileLikes, setProfileLikes] = useState<ProfileSummaryUser[]>([])
   const [mutualMatches, setMutualMatches] = useState<ProfileSummaryUser[]>([])
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUserSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -39,14 +41,16 @@ export function useMyProfile() {
   const fetchActivity = useCallback(async () => {
     if (!userId) return
     try {
-      const [views, likes, matches] = await Promise.all([
+      const [views, likes, matches, blocks] = await Promise.all([
         profileApi.getProfileViews().catch(() => []),
         profileApi.getLikesReceived().catch(() => []),
         profileApi.getMatches().catch(() => []),
+        profileApi.getBlockedUsers().catch(() => []),
       ])
       setProfileViews(Array.isArray(views) ? views : [])
       setProfileLikes(Array.isArray(likes) ? likes : [])
       setMutualMatches(Array.isArray(matches) ? matches : [])
+      setBlockedUsers(Array.isArray(blocks) ? blocks : [])
     } catch {
       // ignore
     }
@@ -113,6 +117,17 @@ export function useMyProfile() {
     }
   }
 
+  const handleUnblockUser = async (blockedUserId: string) => {
+    if (!userId) return
+    try {
+      await profileApi.unblockProfile(blockedUserId)
+      setBlockedUsers((current) => current.filter((user) => user.blockedUserId !== blockedUserId))
+      toast.success("User unblocked")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to unblock user")
+    }
+  }
+
   const activity = [
     ...profileLikes.slice(0, 5).map((p, i) => ({
       id: `like-${i}`,
@@ -137,6 +152,7 @@ export function useMyProfile() {
     profileViews,
     profileLikes,
     mutualMatches,
+    blockedUsers,
     loading,
     error,
     isEditing,
@@ -151,6 +167,7 @@ export function useMyProfile() {
     handleUploadPhoto,
     handleSetMainPhoto,
     handleDeletePhoto,
+    handleUnblockUser,
     activity,
   }
 }

@@ -361,6 +361,11 @@ namespace sparkdates.DomainServices.Services.UserService
                 return true;
             }
 
+            catch (ValidationException)
+            {
+                await _unitOfWork.RollBackTransaction();
+                throw;
+            }
             catch (Exception ex)
             {
                 await _unitOfWork.RollBackTransaction();
@@ -382,9 +387,34 @@ namespace sparkdates.DomainServices.Services.UserService
             throw new NotImplementedException();
         }
 
-        public Task<GetUserBlocksDto> GetUserBlocksAsync(Guid userId)
+        public async Task<GetUsersBlocksDto> GetUserBlocksAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var blockedUserRows = await _unitOfWork.GetRepository<IGenericRepoAsync<UserBlock>>()
+                .GetAllAsync(block => block.BlockingUserId == userId);
+
+            var blockedUsers = new List<GetUserBlocksDto>();
+
+            foreach (var block in blockedUserRows)
+            {
+                var blockedUser = await _unitOfWork.GetRepository<IUserRepositoryAsync>().FindAsync(block.BlockedUserId);
+                if (blockedUser is null)
+                    continue;
+
+                blockedUsers.Add(new GetUserBlocksDto
+                {
+                    BlockedUserId = block.BlockedUserId,
+                    BlockingUserId = block.BlockingUserId,
+                    FirstName = blockedUser.FirstName,
+                    LastName = blockedUser.LastName,
+                    UserName = blockedUser.UserName,
+                    ProfilePicture = blockedUser.PhotoProfileUrl
+                });
+            }
+
+            return new GetUsersBlocksDto
+            {
+                UserBlocks = blockedUsers
+            };
         }
 
         public async Task<bool> SetProfilePictureAsync(Guid userId, Guid pictureId)

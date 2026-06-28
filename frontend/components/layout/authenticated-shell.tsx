@@ -7,6 +7,7 @@ import { authApi } from "@/lib/auth"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { SiteHeader, type SiteHeaderProps } from "@/components/layout/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { useRealtimeToasts } from "@/hooks/useRealtimeToasts"
 
 export const authenticatedSidebarStyle = {
   "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -26,6 +27,7 @@ export function AuthenticatedShell({
 }: AuthenticatedShellProps) {
   const router = useRouter()
   const [onboardingChecked, setOnboardingChecked] = useState(false)
+  useRealtimeToasts()
 
   useEffect(() => {
     let cancelled = false
@@ -75,7 +77,7 @@ export function AuthenticatedShell({
   return (
     <SidebarProvider
       style={authenticatedSidebarStyle}
-      className="bg-[radial-gradient(circle_at_12%_8%,rgba(244,63,94,0.16),transparent_28%),radial-gradient(circle_at_86%_4%,rgba(251,146,60,0.12),transparent_24%),var(--background)]"
+      className="h-svh bg-[radial-gradient(circle_at_12%_8%,rgba(244,63,94,0.16),transparent_28%),radial-gradient(circle_at_86%_4%,rgba(251,146,60,0.12),transparent_24%),var(--background)]"
     >
       <AppSidebar variant="inset" />
       <SidebarInset

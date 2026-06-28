@@ -12,13 +12,31 @@ using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+var nextPublicApiUrl = builder.Configuration["NEXT_PUBLIC_API_URL"];
+var nextPublicApiOrigin = Uri.TryCreate(nextPublicApiUrl, UriKind.Absolute, out var nextPublicApiUri)
+    ? nextPublicApiUri.GetLeftPart(UriPartial.Authority)
+    : null;
+string? NormalizeOrigin(string? origin)
+{
+    if (string.IsNullOrWhiteSpace(origin))
+        return null;
+
+    var trimmed = origin.Trim();
+    if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+        return uri.GetLeftPart(UriPartial.Authority);
+
+    return trimmed.Replace(":///", "://", StringComparison.Ordinal);
+}
+
 var allowedOrigins = new[]
 {
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3006",
-    "https://sparkdates-dating.vercel.app",
-    builder.Configuration["AppSettings:FrontUri"]
+    NormalizeOrigin("http://localhost:3000"),
+    NormalizeOrigin("http://localhost:3001"),
+    NormalizeOrigin("http://localhost:3006"),
+    NormalizeOrigin("http://10.32.114.107:3006"),
+    NormalizeOrigin("https://sparkdates-dating.vercel.app"),
+    nextPublicApiOrigin,
+    NormalizeOrigin(builder.Configuration["AppSettings:FrontUri"])
 }
 .Where(origin => !string.IsNullOrWhiteSpace(origin))
 .Distinct()

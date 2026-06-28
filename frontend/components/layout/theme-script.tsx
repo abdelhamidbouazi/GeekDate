@@ -1,21 +1,16 @@
 "use client"
 
 import { useEffect } from "react"
-import { usePathname } from "next/navigation"
 
 export function ThemeScript() {
-  const pathname = usePathname()
-
   useEffect(() => {
-    const lightModeRoutes = ['/home', '/login', '/signup', '/register', '/forget-password', '/forgot-password', '/complete-profile']
-    const isLightRoute = lightModeRoutes.some(route => pathname?.startsWith(route))
-    
-    if (isLightRoute) {
-      document.documentElement.classList.remove('dark')
+    const saved = typeof window !== "undefined" ? localStorage.getItem("geekdate-theme-preference") : null
+    if (saved === "dark") {
+      document.documentElement.classList.add("dark")
     } else {
-      document.documentElement.classList.add('dark')
+      document.documentElement.classList.remove("dark")
     }
-  }, [pathname])
+  }, [])
 
   return null
 }

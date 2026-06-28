@@ -22,10 +22,8 @@ const GENDER_OPTIONS = [
 ]
 
 const PREFERRED_GENDER_OPTIONS = [
-  { value: "0", label: "None" },
   { value: "1", label: "Male" },
   { value: "2", label: "Female" },
-  { value: "3", label: "Unknown" },
 ]
 
 interface ProfileSettingsTabProps {

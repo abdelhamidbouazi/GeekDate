@@ -67,3 +67,73 @@ export const defaultNotificationSettings: NotificationSettings = {
 export const defaultSecuritySettings: SecuritySettings = {
   twoFactorEnabled: false,
 }
+
+export interface SettingsSectionAvailability {
+  available: boolean
+  label: string
+  description: string
+}
+
+export interface SettingsPhoto {
+  id: string
+  userId: string
+  url: string
+  isMain: boolean
+  publicId: string
+}
+
+export interface SettingsConnectedProfile {
+  firstName: string
+  lastName: string
+  userName: string
+  email: string
+  gender: number
+  dateOfBirth: string | null
+  biography: string
+  preferredGender: number
+  interests: Array<{ id: string; name: string }>
+  profileViews: number
+  city: string
+  country: string
+  pictures: SettingsPhoto[]
+  userLikes: number
+  emailConfirmed: boolean
+  isBasicInfoComplete: boolean
+  isPreferencesComplete: boolean
+  isProfileCompleted: boolean
+  fameRating: number
+  latitude: number
+  longitude: number
+}
+
+export interface SettingsAccountDraft {
+  firstName: string
+  lastName: string
+  username: string
+  email: string
+}
+
+export interface SettingsProfileDraft {
+  dateOfBirth: string
+  gender: string
+  sexualPreference: string
+  biography: string
+  city: string
+  interestIds: string[]
+}
+
+export interface SettingsLocationDraft {
+  city: string
+  latitude: string
+  longitude: string
+}
+
+export type SettingsPanelKey =
+  | "account"
+  | "profile"
+  | "photos"
+  | "location"
+  | "security"
+  | "privacy"
+  | "notifications"
+  | "danger"

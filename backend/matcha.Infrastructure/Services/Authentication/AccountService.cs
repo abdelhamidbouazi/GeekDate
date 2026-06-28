@@ -274,7 +274,7 @@ namespace sparkdates.Infrastructure.Services.Authentication
         {
             var token = GenerateVerificationToken();
             var confirmationMailEndpoint = "account/confirm-email";
-            var baseUri = BuildUri(confirmationMailEndpoint, isFrontEnd: true);
+            var baseUri = BuildUri("", isFrontEnd: true);
 
             var confirmEmailToken = new ConfirmEmailToken()
             {
@@ -303,7 +303,7 @@ namespace sparkdates.Infrastructure.Services.Authentication
             if (user is null) return;
 
             var resetPasswordEndpoint = "account/reset-password";
-            var baseUri = BuildUri(resetPasswordEndpoint, isFrontEnd: true);
+            var baseUri = BuildUri("", isFrontEnd: true);
             var token = GenerateVerificationToken();
 
             var resetPasswordToken = new ResetPassword()

@@ -12,10 +12,12 @@ import { useState } from "react"
 
 interface SidebarNotificationsTriggerProps {
   unreadCount?: number
+  onUnreadCountChange?: (count: number) => void
 }
 
 export function SidebarNotificationsTrigger({
   unreadCount = 0,
+  onUnreadCountChange,
 }: SidebarNotificationsTriggerProps) {
   const [open, setOpen] = useState(false)
 
@@ -31,12 +33,18 @@ export function SidebarNotificationsTrigger({
             <Bell className="size-4" />
             <span>Notifications</span>
             {unreadCount > 0 && (
-              <SidebarMenuBadge className="text-primary">{unreadCount > 99 ? "99+" : unreadCount}</SidebarMenuBadge>
+              <SidebarMenuBadge className="text-primary">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </SidebarMenuBadge>
             )}
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-      <NotificationsDialog open={open} onOpenChange={setOpen} />
+      <NotificationsDialog
+        open={open}
+        onOpenChange={setOpen}
+        onUnreadCountChange={onUnreadCountChange}
+      />
     </>
   )
 }

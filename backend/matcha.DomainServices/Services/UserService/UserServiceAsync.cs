@@ -20,17 +20,32 @@ namespace sparkdates.DomainServices.Services.UserService
         private readonly ICloudinaryServiceAsync _cloudinaryServiceAsync;
         private readonly IAuthenticatedUser _authenticatedUser;
         private readonly IRealtimeNotificationServiceAsync _notificationService;
+        private readonly IBlockGuardServiceAsync _blockGuardServiceAsync;
 
-        public UserServiceAsync(IUnitOfWork unitOfWork, ICloudinaryServiceAsync cloudinaryServiceAsync, IAuthenticatedUser authenticatedUser, IRealtimeNotificationServiceAsync notificationService)
+        public UserServiceAsync(
+            IUnitOfWork unitOfWork,
+            ICloudinaryServiceAsync cloudinaryServiceAsync,
+            IAuthenticatedUser authenticatedUser,
+            IRealtimeNotificationServiceAsync notificationService,
+            IBlockGuardServiceAsync blockGuardServiceAsync)
         {
             _unitOfWork = unitOfWork;
             _cloudinaryServiceAsync = cloudinaryServiceAsync;
             _authenticatedUser = authenticatedUser;
             _notificationService = notificationService;
+            _blockGuardServiceAsync = blockGuardServiceAsync;
         }
 
         public async Task<AppUser> GetUserByIdAsync(Guid userId)
         {
+            if (_authenticatedUser.UserId != Guid.Empty && _authenticatedUser.UserId != userId)
+            {
+                await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                    _authenticatedUser.UserId,
+                    userId,
+                    "This profile is unavailable.");
+            }
+
             var user = await _unitOfWork.GetRepository<IUserRepositoryAsync>().GetUserWithPhotosById(userId);
 
             if (user == null) throw new NotFoundException("Could not find user");
@@ -215,6 +230,11 @@ namespace sparkdates.DomainServices.Services.UserService
         {
             try
             {
+                await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                    _authenticatedUser.UserId,
+                    profileId,
+                    "This profile is unavailable.");
+
                 await _unitOfWork.CreateTransaction();
                 var _repos = _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>();
                 var profileView = await _repos.FirstOrDefaultAsync(x => x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == profileId);
@@ -304,6 +324,10 @@ namespace sparkdates.DomainServices.Services.UserService
             try
             {
                 var currentUserId = _authenticatedUser.UserId;
+                await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                    currentUserId,
+                    targetUserId,
+                    "This profile is unavailable.");
 
                 var repo = _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>();
 
@@ -406,19 +430,28 @@ namespace sparkdates.DomainServices.Services.UserService
         }
 
 
-        public async Task<bool> BlockUserAsync(Guid userIdToLike)
+        public async Task<bool> BlockUserAsync(Guid userIdToBlock)
         {
             try
             {
                 await _unitOfWork.CreateTransaction();
 
+                // Remove any like/match relationship
                 var userLike = await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>()
-                    .FirstOrDefaultAsync(x => (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userIdToLike) || (x.LikerUserId == userIdToLike && x.LikedUserId == _authenticatedUser.UserId));
+                    .FirstOrDefaultAsync(x =>
+                        (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userIdToBlock) ||
+                        (x.LikerUserId == userIdToBlock && x.LikedUserId == _authenticatedUser.UserId));
                 if (userLike is not null)
                     await _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>().Delete(userLike);
 
+                // Remove the match record so blocked user disappears from Matches page
+                await RemoveMatchAsync(_authenticatedUser.UserId, userIdToBlock);
+
+                // Remove mutual profile views
                 var profileViews = await _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>()
-                    .GetAllAsync(x => (x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == userIdToLike) || (x.TargetUserId == _authenticatedUser.UserId && x.FromUserId == userIdToLike));
+                    .GetAllAsync(x =>
+                        (x.FromUserId == _authenticatedUser.UserId && x.TargetUserId == userIdToBlock) ||
+                        (x.TargetUserId == _authenticatedUser.UserId && x.FromUserId == userIdToBlock));
                 if (profileViews.Any())
                     await _unitOfWork.GetRepository<IGenericRepoAsync<ProfileView>>().DeleteRange(profileViews);
 
@@ -426,7 +459,7 @@ namespace sparkdates.DomainServices.Services.UserService
                 {
                     Id = Guid.NewGuid(),
                     BlockingUserId = _authenticatedUser.UserId,
-                    BlockedUserId = userIdToLike,
+                    BlockedUserId = userIdToBlock,
                 };
 
                 await _unitOfWork.GetRepository<IGenericRepoAsync<UserBlock>>().AddAsync(block);
@@ -440,17 +473,47 @@ namespace sparkdates.DomainServices.Services.UserService
             }
         }
 
-        // Todo if we enter an id of a user that we didn t like nothing happens
+        public async Task<bool> UnblockUserAsync(Guid userIdToUnblock)
+        {
+            try
+            {
+                await _unitOfWork.CreateTransaction();
+
+                var blockRepo = _unitOfWork.GetRepository<IGenericRepoAsync<UserBlock>>();
+                var block = await blockRepo.FirstOrDefaultAsync(x =>
+                    x.BlockingUserId == _authenticatedUser.UserId &&
+                    x.BlockedUserId == userIdToUnblock);
+
+                if (block is null)
+                {
+                    await _unitOfWork.RollBackTransaction();
+                    return false;
+                }
+
+                await blockRepo.Delete(block);
+                await _unitOfWork.CommitTransaction();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollBackTransaction();
+                throw new ApiException("Failed to unblock the requested user", ex);
+            }
+        }
+
         public async Task<bool> UnLikeUserAsync(Guid userIdToUnLike)
         {
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                _authenticatedUser.UserId,
+                userIdToUnLike,
+                "This profile is unavailable.");
+
             var _repos = _unitOfWork.GetRepository<IGenericRepoAsync<UserLike>>();
-            var userLike = await _repos.FirstOrDefaultAsync(x => (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userIdToUnLike)
-            || (x.LikerUserId == userIdToUnLike && x.LikedUserId == _authenticatedUser.UserId));
+            var userLike = await _repos.FirstOrDefaultAsync(x =>
+                (x.LikerUserId == _authenticatedUser.UserId && x.LikedUserId == userIdToUnLike) ||
+                (x.LikerUserId == userIdToUnLike && x.LikedUserId == _authenticatedUser.UserId));
 
             if (userLike is null)
-                return false;
-
-            if (userLike.IsMatched)
                 return false;
 
             await _unitOfWork.CreateTransaction();
@@ -459,29 +522,29 @@ namespace sparkdates.DomainServices.Services.UserService
             {
                 if (userLike.LikerUserId == userIdToUnLike)
                 {
-                    await _unitOfWork.CreateTransaction();
+                    // They liked us first; we completed the match. Withdraw our side.
                     userLike.IsMatched = false;
                     userLike.MatchedAt = null;
                     await _repos.Update(userLike);
-
-                    // delete the corresponding match if exists
                     await RemoveMatchAsync(_authenticatedUser.UserId, userIdToUnLike);
-
-                    await _unitOfWork.CommitTransaction();
                 }
                 else
                 {
+                    // We initiated the like (matched or not) — delete it entirely.
                     await _repos.Delete(userLike);
                     await RemoveMatchAsync(_authenticatedUser.UserId, userIdToUnLike);
-
-                    await _unitOfWork.CommitTransaction();
                 }
+
+                await _unitOfWork.CommitTransaction();
             }
-            catch (Exception ex)
+            catch
             {
                 await _unitOfWork.RollBackTransaction();
                 throw;
             }
+
+            await _notificationService.SendNotificationAsync(
+                userIdToUnLike, _authenticatedUser.UserId, NotificationType.Unlike);
 
             return true;
         }

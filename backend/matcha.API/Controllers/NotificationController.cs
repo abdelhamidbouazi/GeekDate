@@ -1,4 +1,4 @@
-﻿using sparkdates.Application.Interfaces.Services.Notification;
+using sparkdates.Application.Interfaces.Services.Notification;
 using sparkdates.Application.ResponseWrappers;
 using sparkdates.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +16,15 @@ namespace sparkdates.API.Controllers
         {
             _notificationServiceAsync = notificationServiceAsync;
         }
+
+        [HttpGet]
+        public async Task<ActionResult> GetAllNotifications()
+        {
+            var userId = GetCurrentUserId();
+            var result = await _notificationServiceAsync.GetAllNotificationsAsync(userId);
+            return Ok(new Response<IReadOnlyCollection<Notification>>(result));
+        }
+
         [HttpGet("unread")]
         public async Task<ActionResult> GetUnreadNotifications()
         {
@@ -24,12 +33,36 @@ namespace sparkdates.API.Controllers
             return Ok(new Response<IReadOnlyCollection<Notification>>(result));
         }
 
+        [HttpGet("unread-count")]
+        public async Task<ActionResult> GetUnreadCount()
+        {
+            var userId = GetCurrentUserId();
+            var count = await _notificationServiceAsync.GetUnreadCountAsync(userId);
+            return Ok(new { count });
+        }
+
         [HttpPut("mark-read")]
         public async Task<ActionResult> MarkAllAsRead()
         {
             var userId = GetCurrentUserId();
             await _notificationServiceAsync.MarkAllAsReadAsync(userId);
             return Ok();
+        }
+
+        [HttpPut("{id:Guid}/read")]
+        public async Task<ActionResult> MarkOneAsRead(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            await _notificationServiceAsync.MarkAsReadAsync(userId, id);
+            return NoContent();
+        }
+
+        [HttpDelete("{id:Guid}")]
+        public async Task<ActionResult> DeleteNotification(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            await _notificationServiceAsync.DeleteNotificationAsync(userId, id);
+            return NoContent();
         }
 
         private Guid GetCurrentUserId()
@@ -45,6 +78,5 @@ namespace sparkdates.API.Controllers
 
             return Guid.Parse(userIdClaim);
         }
-
     }
 }

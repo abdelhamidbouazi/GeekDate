@@ -172,7 +172,6 @@ export function ProfileEditDialog({ profile, onSave }: ProfileEditDialogProps) {
               <SelectContent>
                 <SelectItem value="Women">Women</SelectItem>
                 <SelectItem value="Men">Men</SelectItem>
-                <SelectItem value="Everyone">Everyone</SelectItem>
               </SelectContent>
             </Select>
           </div>
