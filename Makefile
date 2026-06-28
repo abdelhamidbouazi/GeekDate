@@ -1,7 +1,9 @@
 .PHONY: up down build restart logs logs-backend logs-frontend logs-db ps \
-	shell-backend shell-frontend shell-db migrate reset-db clean clean-data help
+	shell-backend shell-frontend shell-db migrate reset-db clean clean-data \
+	seed remove-seed help
 
 COMPOSE := docker compose
+BACKEND_PORT ?= 8080
 
 up:
 	$(COMPOSE) up -d 
@@ -53,6 +55,25 @@ clean-data:
 	$(COMPOSE) down -v
 	@echo "All data (volumes) removed."
 
+seed: up
+	@echo "Waiting for backend to be ready..."
+	@until curl -sf http://localhost:$(BACKEND_PORT)/health > /dev/null 2>&1 || \
+	       curl -sf http://localhost:$(BACKEND_PORT)/api/seed > /dev/null 2>&1; do \
+	    sleep 2; \
+	done 2>/dev/null; true
+	@echo "Seeding 600 users..."
+	@curl -sf -X POST "http://localhost:$(BACKEND_PORT)/api/seed?force=false" \
+	    -H "Content-Type: application/json" | cat
+	@echo ""
+	@echo "Done. Run 'make remove-seed' to undo."
+
+remove-seed:
+	@echo "Removing seed data..."
+	@curl -sf -X DELETE "http://localhost:$(BACKEND_PORT)/api/seed" \
+	    -H "Content-Type: application/json" | cat
+	@echo ""
+	@echo "Seed data removed."
+
 help:
 	@echo "SparkDates Local Development - Makefile targets"
 	@echo ""
@@ -72,4 +93,6 @@ help:
 	@echo "  make reset-db     - Full DB reset (remove volumes, restart stack)"
 	@echo "  make clean        - Stop stack, remove volumes, prune Docker"
 	@echo "  make clean-data   - Stop stack and remove all volumes (database, etc.)"
+	@echo "  make seed         - Seed 600 diverse fake users (dev only)"
+	@echo "  make remove-seed  - Remove all seeded users (dev only)"
 	@echo "  make help         - Show this help"

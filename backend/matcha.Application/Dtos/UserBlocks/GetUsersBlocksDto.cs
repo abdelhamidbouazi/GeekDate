@@ -2,5 +2,6 @@
 {
     public class GetUsersBlocksDto
     {
+        public IEnumerable<GetUserBlocksDto> UserBlocks { get; set; } = [];
     }
 }

@@ -151,13 +151,8 @@ export default function BrowsePage() {
     }
   }, [profiles])
 
-  const handleDislike = useCallback(async (userId: string) => {
-    try {
-      await browseApi.unlikeProfile(userId)
-      setProfiles((prev) => prev.filter((p) => p.id !== userId))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not pass on this profile.")
-    }
+  const handleDislike = useCallback((userId: string) => {
+    setProfiles((prev) => prev.filter((p) => p.id !== userId))
   }, [])
 
   return (

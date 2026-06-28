@@ -87,9 +87,6 @@ namespace sparkdates.Infrastructure.Services.RealtimeNotification
         }
         public async Task SendNotificationToUserAsync(Guid userId, RealtimeNotificationDto realtimeNotificationDto)
         {
-            File.AppendAllText("C:\\temp\\signalr-log.txt",
-                $"[{DateTime.Now}] Sending notification to userId: {userId}\n");
-
             await _hubContext.Clients
                  .User(userId.ToString())
                  .SendAsync("ReceiveNotification", realtimeNotificationDto);

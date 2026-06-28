@@ -1,5 +1,8 @@
 "use client"
 
+import { useState, useCallback } from "react"
+import { toast } from "sonner"
+import { Loader2, LocateFixed } from "lucide-react"
 import { InterestsField } from "@/app/verify/interests-field"
 import type { GetInterestsDto } from "@/lib/services/browse-api"
 import { Button } from "@/components/ui/button"
@@ -14,6 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { SettingsSection } from "@/components/settings/settings-section"
+import { settingsApi } from "@/lib/api/settings"
 import type { ProfileFormState } from "@/types/settings"
 
 const GENDER_OPTIONS = [
@@ -22,10 +26,8 @@ const GENDER_OPTIONS = [
 ]
 
 const PREFERRED_GENDER_OPTIONS = [
-  { value: "0", label: "None" },
   { value: "1", label: "Male" },
   { value: "2", label: "Female" },
-  { value: "3", label: "Unknown" },
 ]
 
 interface ProfileSettingsTabProps {
@@ -53,6 +55,59 @@ export function ProfileSettingsTab({
   onInterestError,
   onSave,
 }: ProfileSettingsTabProps) {
+  const [locating, setLocating] = useState(false)
+
+  const handleDetectLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser")
+      return
+    }
+    setLocating(true)
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 10000,
+          maximumAge: 0,
+          enableHighAccuracy: false,
+        })
+      })
+      const { latitude, longitude } = position.coords
+
+      // Save coordinates to backend
+      await settingsApi.setLocation(latitude, longitude)
+
+      // Reverse-geocode to fill city + country in the form (Nominatim, no API key)
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+        { headers: { "Accept-Language": "en" } }
+      )
+      if (res.ok) {
+        const data = (await res.json()) as {
+          address?: Record<string, string>
+        }
+        const addr = data.address ?? {}
+        const city =
+          addr.city ?? addr.town ?? addr.village ?? addr.county ?? ""
+        const country = addr.country ?? ""
+        onChange({ city, country })
+      }
+
+      toast.success("Location updated")
+    } catch (err) {
+      if (
+        typeof GeolocationPositionError !== "undefined" &&
+        err instanceof GeolocationPositionError &&
+        err.code === err.PERMISSION_DENIED
+      ) {
+        toast.error("Location access was denied. Allow it in your browser settings.")
+      } else {
+        toast.error("Could not detect your location")
+      }
+    } finally {
+      setLocating(false)
+    }
+  }, [onChange])
+
   return (
     <SettingsSection
       title="Profile"
@@ -145,14 +200,52 @@ export function ProfileSettingsTab({
               Age is calculated from your date of birth.
             </p>
           </Field>
-          <Field>
-            <FieldLabel htmlFor="settings-city">Location (city)</FieldLabel>
-            <Input
-              id="settings-city"
-              value={profile.city}
-              onChange={(e) => onChange({ city: e.target.value })}
-            />
-          </Field>
+        </div>
+
+        {/* Location section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Location</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDetectLocation}
+              disabled={locating || saving}
+              className="gap-1.5 h-8 text-xs"
+            >
+              {locating
+                ? <Loader2 className="size-3.5 animate-spin" />
+                : <LocateFixed className="size-3.5" />
+              }
+              {locating ? "Detecting…" : "Detect my location"}
+            </Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="settings-city">City</FieldLabel>
+              <Input
+                id="settings-city"
+                placeholder="e.g. Casablanca"
+                value={profile.city}
+                onChange={(e) => onChange({ city: e.target.value })}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="settings-country">Country</FieldLabel>
+              <Input
+                id="settings-country"
+                placeholder="e.g. Morocco"
+                value={profile.country}
+                onChange={(e) => onChange({ country: e.target.value })}
+                readOnly
+                className="bg-muted/40 cursor-default"
+              />
+              <p className="text-xs text-muted-foreground">
+                Set automatically via "Detect my location"
+              </p>
+            </Field>
+          </div>
         </div>
 
         <Field>

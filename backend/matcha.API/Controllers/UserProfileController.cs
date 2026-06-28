@@ -1,22 +1,26 @@
-﻿using sparkdates.Application.Dtos.Users;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using sparkdates.Application.Dtos.Users;
 using sparkdates.Application.Features.Profile.Commands.CompleteUserPreferences;
 using sparkdates.Application.Features.Profile.Commands.SetUserLocation;
 using sparkdates.Application.Features.Profile.Commands.UpdateUserProfile;
 using sparkdates.Application.Features.Profile.Queries.GetConnectedProfile;
 using sparkdates.Application.Features.Users.Commands.CompleteUserProfile;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using sparkdates.Application.Interfaces.Services;
+using System.Security.Claims;
 
 namespace sparkdates.API.Controllers
 {
     public class UserProfileController : BaseApiController
     {
         private readonly IMediator _mediator;
+        private readonly IUserProfileService _userProfileService;
 
-        public UserProfileController(IMediator mediator)
+        public UserProfileController(IMediator mediator, IUserProfileService userProfileService)
         {
             _mediator = mediator;
+            _userProfileService = userProfileService;
         }
 
         [Authorize]
@@ -32,11 +36,11 @@ namespace sparkdates.API.Controllers
         {
             return Ok(await _mediator.Send(new CompleteUserProfileCommand { BasicUserProfileDto = basicUserProfileDto }));
         }
+
         [Authorize]
         [HttpPut("complete-preferences")]
         public async Task<ActionResult> UpdatePreferences([FromForm] CompleteUserPreferencesCommand request)
         {
-            //request.Pictures = pictures;
             return Ok(await _mediator.Send(request));
         }
 
@@ -51,9 +55,19 @@ namespace sparkdates.API.Controllers
         [HttpPut("update-profile")]
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserProfileCommand command)
         {
-            System.IO.File.AppendAllText("C:\\temp\\update-profile-log.txt",
-                $"[{DateTime.Now}] Gender={command.Gender} ({(int)command.Gender}), SexualPrefs={command.SexualPreferences} ({(int)command.SexualPreferences}), FirstName={command.FirstName}, City={command.City}\n");
             return Ok(await _mediator.Send(command));
+        }
+
+        [Authorize]
+        [HttpGet("blocked-users")]
+        public async Task<ActionResult> GetBlockedUsers()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null)
+                return BadRequest("Unable to retrieve user ID from the token.");
+
+            var blockedUsers = await _userProfileService.GetUserBlocksAsync(Guid.Parse(userId));
+            return Ok(blockedUsers.UserBlocks);
         }
     }
 }

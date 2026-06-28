@@ -1,5 +1,6 @@
 import { api } from "./api";
 import { getMatches, getReceivedLikes, getGivenLikes } from "@/lib/api/users";
+import { unwrapData } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api/http";
 import { endpoints } from "@/lib/api/endpoints";
 import {
@@ -33,6 +34,122 @@ function coerceViewerAge(v: unknown): number | null | undefined {
     return Number.isNaN(n) ? undefined : n;
   }
   return undefined;
+}
+
+function asString(value: unknown): string {
+  return value == null ? "" : String(value)
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return fallback
+}
+
+// Backend uses JsonStringEnumConverter — enums arrive as "Male"/"Female" not 1/2
+function parseGender(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  const s = String(value ?? "").toLowerCase()
+  if (s === "male") return 1
+  if (s === "female") return 2
+  return 0
+}
+
+function parseSexualPref(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value === 3 ? 0 : value
+  const s = String(value ?? "").toLowerCase()
+  if (s === "male") return 1
+  if (s === "female") return 2
+  return 0
+}
+
+function normalizePhoto(raw: unknown): AppUserPhoto | null {
+  if (!raw || typeof raw !== "object") return null
+  const photo = raw as Record<string, unknown>
+  const id = asString(photo.id ?? photo.Id)
+  const url = asString(photo.url ?? photo.Url)
+  if (!id && !url) return null
+  return {
+    id,
+    url,
+    isMain: Boolean(photo.isMain ?? photo.IsMain),
+    publicId: asString(photo.publicId ?? photo.PublicId),
+    userId: asString(photo.userId ?? photo.UserId),
+  }
+}
+
+function normalizeInterest(raw: unknown): UserInterest | null {
+  if (!raw || typeof raw !== "object") return null
+  const interest = raw as Record<string, unknown>
+  const id = asString(interest.id ?? interest.Id)
+  const interestId = asString(interest.interestId ?? interest.InterestId)
+  if (!id && !interestId) return null
+  const nested = interest.interest
+  const nestedRecord = nested && typeof nested === "object" ? (nested as Record<string, unknown>) : null
+  return {
+    id,
+    userId: asString(interest.userId ?? interest.UserId),
+    interestId,
+    interest: nestedRecord
+      ? {
+          id: asString(nestedRecord.id ?? nestedRecord.Id),
+          name: asString(nestedRecord.name ?? nestedRecord.Name),
+        }
+      : undefined,
+  }
+}
+
+export function normalizeAppUserRaw(raw: unknown): AppUser {
+  const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>
+  const photosRaw = item.photos ?? item.Photos
+  const interestsRaw = item.interests ?? item.Interests
+  const photos = Array.isArray(photosRaw)
+    ? photosRaw.map(normalizePhoto).filter((photo): photo is AppUserPhoto => Boolean(photo))
+    : []
+  const interests = Array.isArray(interestsRaw)
+    ? interestsRaw.map(normalizeInterest).filter((interest): interest is UserInterest => Boolean(interest))
+    : []
+  const photoProfileUrl =
+    asString(item.photoProfileUrl ?? item.PhotoProfileUrl) ||
+    photos.find((photo) => photo.isMain)?.url ||
+    photos[0]?.url ||
+    null
+
+  return {
+    id: asString(item.id ?? item.Id),
+    firstName: asString(item.firstName ?? item.FirstName),
+    lastName: asString(item.lastName ?? item.LastName),
+    userName: asString(item.userName ?? item.UserName ?? item.username ?? item.Username),
+    email: asString(item.email ?? item.Email),
+    gender: parseGender(item.gender ?? item.Gender),
+    dateOfBirth:
+      (item.dateOfBirth ?? item.DateOfBirth) != null
+        ? asString(item.dateOfBirth ?? item.DateOfBirth)
+        : null,
+    biography: asString(item.biography ?? item.Biography),
+    lookingFor: parseSexualPref(
+      item.lookingFor ?? item.LookingFor ?? item.sexualPreferences ?? item.SexualPreferences
+    ),
+    preferredGender: parseSexualPref(item.preferredGender ?? item.PreferredGender ?? item.sexualPreferences ?? item.SexualPreferences),
+    city: (item.city ?? item.City) != null ? asString(item.city ?? item.City) : null,
+    country: (item.country ?? item.Country) != null ? asString(item.country ?? item.Country) : null,
+    photos,
+    interests,
+    createdAt: asString(item.createdAt ?? item.CreatedAt),
+    lastActive: asString(item.lastActive ?? item.LastActive),
+    emailConfirmed: Boolean(item.emailConfirmed ?? item.EmailConfirmed),
+    fameRating: asNumber(item.fameRating ?? item.FameRating),
+    latitude: asNumber(item.latitude ?? item.Latitude),
+    longitude: asNumber(item.longitude ?? item.Longitude),
+    photoProfileUrl,
+    pictureUrl: photoProfileUrl,
+    isLikedByMe: Boolean(item.isLikedByMe ?? item.IsLikedByMe),
+    isLikedByThem: Boolean(item.isLikedByThem ?? item.IsLikedByThem),
+    isMatched: Boolean(item.isMatched ?? item.IsMatched),
+  }
 }
 
 /**
@@ -122,6 +239,15 @@ export interface ProfileSummaryUser extends ProfileViewerUser {
   city?: string | null;
   country?: string | null;
   matchedAt?: string | null;
+}
+
+export interface BlockedUserSummary {
+  blockedUserId: string
+  blockingUserId: string
+  firstName?: string | null
+  lastName?: string | null
+  userName?: string | null
+  profilePicture?: string | null
 }
 
 export function profileViewerDisplayName(v: ProfileViewerUser): string {
@@ -214,6 +340,10 @@ export interface AppUser {
   latitude: number;
   longitude: number;
   photoProfileUrl: string | null;
+  pictureUrl?: string | null;
+  isLikedByMe?: boolean;
+  isLikedByThem?: boolean;
+  isMatched?: boolean;
   interests?: UserInterest[];
 }
 
@@ -239,7 +369,7 @@ export interface UpdateProfilePayload {
 export const profileApi = {
   getMe: () => api.get<AuthenticatedUserSummary>(endpoints.users.me),
 
-  getUser: (userId: string) => api.get<AppUser>(endpoints.users.byId(userId)),
+  getUser: async (userId: string) => normalizeAppUserRaw(await api.get<unknown>(endpoints.users.byId(userId))),
 
   getUserLikeInfo: async (userId: string) =>
     normalizeLikeInfo(await api.get<UserLikeInfo>(endpoints.users.byId(userId))),
@@ -288,14 +418,52 @@ export const profileApi = {
   blockProfile: (userId: string) =>
     api.post<void>(endpoints.users.blockProfile(userId)),
 
+  unblockProfile: (userId: string) =>
+    api.delete<void>(endpoints.users.unblockProfile(userId)),
+
+  getBlockedUsers: async () => {
+    const data = await api.get<unknown>(endpoints.profile.blockedUsers)
+    const value = unwrapData(data)
+    const items = Array.isArray(value) ? value : []
+    return items
+      .map<BlockedUserSummary | null>((item) => {
+        if (!item || typeof item !== "object") return null
+        const record = item as Record<string, unknown>
+        const blockedUserId = asString(record.blockedUserId ?? record.BlockedUserId)
+        return {
+          blockedUserId,
+          blockingUserId: asString(record.blockingUserId ?? record.BlockingUserId),
+          firstName: (record.firstName ?? record.FirstName) as string | null | undefined,
+          lastName: (record.lastName ?? record.LastName) as string | null | undefined,
+          userName: (record.userName ?? record.UserName) as string | null | undefined,
+          profilePicture: (record.profilePicture ?? record.ProfilePicture) as string | null | undefined,
+        }
+      })
+      .filter((item): item is BlockedUserSummary => Boolean(item?.blockedUserId))
+  },
+
   getConnectedProfile: () =>
     api.get<{
       latitude?: number;
       longitude?: number;
       Latitude?: number;
       Longitude?: number;
+      isProfileCompleted?: boolean;
+      IsProfileCompleted?: boolean;
+      emailVerified?: boolean;
+      EmailConfirmed?: boolean;
       [key: string]: unknown;
-    }>(endpoints.profile.me),
+    }>(endpoints.profile.me).then((raw) => {
+      const value = unwrapData(raw)
+      const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {}
+      return {
+        ...data,
+        latitude: (data.latitude ?? data.Latitude ?? 0) as number,
+        longitude: (data.longitude ?? data.Longitude ?? 0) as number,
+        isProfileCompleted: Boolean(data.isProfileCompleted ?? data.IsProfileCompleted),
+        emailVerified: Boolean(data.emailVerified ?? data.EmailConfirmed),
+      }
+    }),
 
   setLocation: (lat: number, lng: number) =>
     api.post<void>(endpoints.profile.setLocation, {

@@ -3,6 +3,7 @@ using sparkdates.Application.Dtos.RealtimeDtos;
 using sparkdates.Application.Exceptions;
 using sparkdates.Application.Interfaces.Repositories;
 using sparkdates.Application.Interfaces.Services;
+using sparkdates.Application.Interfaces.Services.Authentication;
 using sparkdates.Application.Interfaces.UoW;
 using sparkdates.Application.ResponseWrappers;
 using sparkdates.Domain.Common.Enums;
@@ -15,12 +16,49 @@ namespace sparkdates.DomainServices.Services.Message
         private readonly IConversationValidatorService _conversationValidatorService;
         private readonly IMatchServiceAsync _matchServiceAsync;
         private readonly IRealtimeNotificationServiceAsync _notificationService;
-        public MessageServiceAsync(IUnitOfWork unitOfWork, IConversationValidatorService conversationValidatorService, IMatchServiceAsync matchServiceAsync, IRealtimeNotificationServiceAsync notificationService)
+        private readonly IAuthenticatedUser _authenticatedUser;
+        private readonly IBlockGuardServiceAsync _blockGuardServiceAsync;
+        public MessageServiceAsync(
+            IUnitOfWork unitOfWork,
+            IConversationValidatorService conversationValidatorService,
+            IMatchServiceAsync matchServiceAsync,
+            IRealtimeNotificationServiceAsync notificationService,
+            IAuthenticatedUser authenticatedUser,
+            IBlockGuardServiceAsync blockGuardServiceAsync)
         {
             _unitOfWork = unitOfWork;
             _conversationValidatorService = conversationValidatorService;
             _matchServiceAsync = matchServiceAsync;
             _notificationService = notificationService;
+            _authenticatedUser = authenticatedUser;
+            _blockGuardServiceAsync = blockGuardServiceAsync;
+        }
+
+        // Read-only access — participants can always view history even after a block.
+        private async Task<Domain.Entities.Conversation> GetReadableConversationAsync(Guid conversationId)
+        {
+            var conversation = await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
+            var currentUserId = _authenticatedUser.UserId;
+
+            if (conversation.User1Id != currentUserId && conversation.User2Id != currentUserId)
+                throw new ForbiddenException("You cannot access this conversation.");
+
+            return conversation;
+        }
+
+        // Write access — also enforces the block guard (can't send/edit/delete when blocked).
+        private async Task<Domain.Entities.Conversation> GetAccessibleConversationAsync(Guid conversationId)
+        {
+            var conversation = await GetReadableConversationAsync(conversationId);
+            var currentUserId = _authenticatedUser.UserId;
+            var otherUserId = conversation.User1Id == currentUserId ? conversation.User2Id : conversation.User1Id;
+
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                currentUserId,
+                otherUserId,
+                "This conversation is unavailable.");
+
+            return conversation;
         }
 
         public async Task<Response<bool>> DeleteMessageAsync(Guid messageId, Guid userId)
@@ -31,6 +69,11 @@ namespace sparkdates.DomainServices.Services.Message
             {
                 throw new NotFoundException("Message not found or you do not have permission to delete it.");
             }
+
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                message.SenderId,
+                message.ReceiverId,
+                "This conversation is unavailable.");
 
             var conversationId = message.ConversationId;
 
@@ -52,7 +95,7 @@ namespace sparkdates.DomainServices.Services.Message
 
         public async Task<IReadOnlyCollection<Domain.Entities.Message>> GetConversationMessagesAsync(Guid conversationId)
         {
-            var conversation = await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
+            await GetReadableConversationAsync(conversationId);
 
             var messages = await _unitOfWork.GetRepository<IMessageRepositoryAsync>().GetConversationMessagesAsync(conversationId);
 
@@ -64,9 +107,14 @@ namespace sparkdates.DomainServices.Services.Message
             int pageNumber = 1,
             int pageSize = 20)
         {
-            await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
+            var conversation = await GetReadableConversationAsync(conversationId);
+            var currentUserId = _authenticatedUser.UserId;
+            var otherUserId = conversation.User1Id == currentUserId ? conversation.User2Id : conversation.User1Id;
 
-            // Validation
+            // Tell the UI whether sending is blocked so it can disable the input immediately
+            var isBlocked = await _blockGuardServiceAsync.IsBlockedBetweenUsersAsync(currentUserId, otherUserId);
+            var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(currentUserId, otherUserId);
+
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 20;
             if (pageSize > 100) pageSize = 100;
@@ -77,12 +125,13 @@ namespace sparkdates.DomainServices.Services.Message
             return new Response<PaginatedResult<Domain.Entities.Message>>(paginatedResult)
             {
                 Message = "Messages retrieved successfully.",
+                IsBlocked = isBlocked || !isMatched,
             };
         }
 
         public async Task<Response<int>> GetUnreadCountAsync(Guid conversationId, Guid userId)
         {
-            await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
+            await GetReadableConversationAsync(conversationId);
 
             var unreadCount = await _unitOfWork.GetRepository<IMessageRepositoryAsync>()
                 .GetUnreadCountAsync(conversationId, userId);
@@ -95,7 +144,7 @@ namespace sparkdates.DomainServices.Services.Message
 
         public async Task<Response<bool>> MarkAsReadAsync(Guid conversationId, Guid userId)
         {
-            await _conversationValidatorService.ValidateConversationExistsAsync(conversationId);
+            await GetReadableConversationAsync(conversationId);
 
             await _unitOfWork.CreateTransaction();
 
@@ -116,6 +165,11 @@ namespace sparkdates.DomainServices.Services.Message
             {
                 throw new ValidationException("Message content cannot be empty.");
             }
+
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                message.SenderId,
+                message.ReceiverId,
+                "This conversation is unavailable.");
 
             var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(message.SenderId, message.ReceiverId);
 
@@ -186,6 +240,11 @@ namespace sparkdates.DomainServices.Services.Message
             {
                 throw new NotFoundException("Message not found or you do not have permission to update it.");
             }
+
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                message.SenderId,
+                message.ReceiverId,
+                "This conversation is unavailable.");
 
             var success = await _unitOfWork.GetRepository<IMessageRepositoryAsync>().UpdateMessageAsync(messageId, userId, newContent);
 

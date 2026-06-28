@@ -152,6 +152,18 @@ namespace sparkdates.API.Controllers
             return BadRequest("Failed to block the profile.");
         }
 
+        [HttpDelete("unblock-profile/{userToUnblock:Guid}")]
+        public async Task<ActionResult> UnblockProfile(Guid userToUnblock)
+        {
+            if (authenticatedUser.UserId == userToUnblock)
+                return BadRequest("You cannot unblock your own profile.");
+
+            if (await userServiceAsync.UnblockUserAsync(userToUnblock))
+                return NoContent();
+
+            return BadRequest("Failed to unblock the profile.");
+        }
+
         [HttpGet("profile-likes")]
         public async Task<ActionResult> GetProfileLikes()
         {

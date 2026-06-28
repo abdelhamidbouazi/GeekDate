@@ -99,6 +99,19 @@ namespace sparkdates.Infrastructure.Hubs
                 });
         }
 
+        // Called by the client every ~60 s to keep lastActive fresh while connected.
+        public async Task Heartbeat()
+        {
+            var userId = GetCurrentUserId();
+            if (userId != Guid.Empty)
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var presenceService = scope.ServiceProvider
+                    .GetRequiredService<IUserPresenceServiceAsync>();
+                await presenceService.UpdateLastActiveAsync(userId);
+            }
+        }
+
         //public async Task MarkMessagesAsRead(Guid conversationId)
         //{
         //    var userId = GetCurrentUserId();

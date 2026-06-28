@@ -56,7 +56,6 @@ export type Gender = "Woman" | "Man" | "Non-binary" | "Other"
 export type SexualPreference =
   | "Women"
   | "Men"
-  | "Everyone"
   | "Not public"
 
 export type RelationshipState = {

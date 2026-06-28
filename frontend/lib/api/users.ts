@@ -1,6 +1,6 @@
 import { apiClient, unwrapData } from "@/lib/api/client"
 import { endpoints } from "@/lib/api/endpoints"
-import { getConversations } from "@/lib/api/conversations"
+import { normalizeAppUserRaw } from "@/lib/utils/normalize-app-user"
 import type { ApiUser, ProfileSummary } from "@/types/user"
 
 const NAME_ID =
@@ -102,7 +102,7 @@ async function getDirectProfileSummaryList(path: string): Promise<ProfileSummary
 }
 
 export async function getPublicUserProfile(userId: string): Promise<ApiUser> {
-  return apiClient.get<ApiUser>(endpoints.users.byId(userId))
+  return normalizeAppUserRaw(await apiClient.get<unknown>(endpoints.users.byId(userId)))
 }
 
 export async function likeProfile(userId: string) {
@@ -127,16 +127,7 @@ export async function getReceivedLikes(): Promise<ProfileSummary[]> {
 }
 
 export async function getMatches(): Promise<ProfileSummary[]> {
-  const byStatus = await getProfilesByLikeStatus((profile) => getBooleanField(profile, "isMatched", "IsMatched"))
-  if (byStatus.length > 0) return byStatus
-
-  const currentUserId = getCurrentUserIdFromToken()
-  if (!currentUserId) return []
-  const conversations = await getConversations().catch(() => [])
-  const otherIds = conversations
-    .map((conversation) => conversation.user1Id === currentUserId ? conversation.user2Id : conversation.user1Id)
-    .filter(Boolean)
-  return hydrateProfileIds(otherIds)
+  return getProfilesByLikeStatus((profile) => getBooleanField(profile, "isMatched", "IsMatched"))
 }
 
 export async function getGivenLikes(): Promise<ProfileSummary[]> {
@@ -200,21 +191,3 @@ async function getProfilesByLikeStatus(
   return summaries.filter((profile): profile is ProfileSummary => Boolean(profile?.id))
 }
 
-async function hydrateProfileIds(ids: string[]): Promise<ProfileSummary[]> {
-  const profiles = await Promise.all(
-    ids.map(async (id) => {
-      const profile = await getPublicUserProfile(id).catch(() => null)
-      if (!profile) return null
-      return normalizeSummary({
-        ...profile,
-        id,
-        profilePicture:
-          profile.photoProfileUrl ??
-          profile.pictureUrl ??
-          profile.photos?.find((photo) => photo.isMain)?.url ??
-          profile.photos?.[0]?.url,
-      })
-    })
-  )
-  return profiles.filter((profile): profile is ProfileSummary => Boolean(profile?.id))
-}

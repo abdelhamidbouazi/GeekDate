@@ -33,6 +33,13 @@ namespace sparkdates.Application.ExceptionHandlerMiddleware
                         await context.Response.WriteAsync(JsonSerializer.Serialize(validationResponse));
                         break;
 
+                    case ForbiddenException forbiddenException:
+                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        response.Message = forbiddenException.Message;
+                        response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                        break;
+
                     case NotFoundException:
                         context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                         response.Message = ex.Message;

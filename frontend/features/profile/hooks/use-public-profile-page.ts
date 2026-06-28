@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { ApiError } from "@/lib/api/client"
 import {
   profileApi,
   getUserIdFromToken,
@@ -134,10 +135,6 @@ export function usePublicProfilePage(userId: string) {
       toast.error("You cannot unlike your own profile.")
       return
     }
-    if (likeInfo?.isMatched) {
-      toast.error("Matched profiles can't be unliked.")
-      return
-    }
     setActionLoading(true)
     try {
       await browseApi.unlikeProfile(userId)
@@ -165,11 +162,15 @@ export function usePublicProfilePage(userId: string) {
       await chatApi.createConversation(userId)
       router.push("/messages")
     } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Could not start conversation. You may need to match first."
-      )
+      if (err instanceof ApiError && err.status === 403) {
+        toast.error("This user is unavailable.")
+      } else {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Could not start conversation. You may need to match first."
+        )
+      }
     } finally {
       setActionLoading(false)
     }

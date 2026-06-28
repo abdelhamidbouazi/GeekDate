@@ -12,16 +12,27 @@ namespace sparkdates.DomainServices.Chat
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuthenticatedUser _authenticatedUser;
         private readonly IMatchServiceAsync _matchServiceAsync;
-        public ConversationServiceAsync(IUnitOfWork unitOfWork, IAuthenticatedUser authenticatedUser, IMatchServiceAsync matchServiceAsync)
+        private readonly IBlockGuardServiceAsync _blockGuardServiceAsync;
+        public ConversationServiceAsync(
+            IUnitOfWork unitOfWork,
+            IAuthenticatedUser authenticatedUser,
+            IMatchServiceAsync matchServiceAsync,
+            IBlockGuardServiceAsync blockGuardServiceAsync)
         {
             _unitOfWork = unitOfWork;
             _authenticatedUser = authenticatedUser;
             _matchServiceAsync = matchServiceAsync;
+            _blockGuardServiceAsync = blockGuardServiceAsync;
         }
         public async Task<Conversation?> GetConversationBetweenUsersAsync(Guid user1Id, Guid user2Id)
         {
             if (user1Id == user2Id)
                 throw new ApiException("Invalid operation");
+
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                user1Id,
+                user2Id,
+                "Users are unavailable for conversation.");
 
             var conversation = await _unitOfWork.GetRepository<IConversationRepositoryAsync>().GetConversationBetweenUsersAsync(user1Id, user2Id);
 
@@ -37,6 +48,11 @@ namespace sparkdates.DomainServices.Chat
 
             if (authenticatedUser.Id == userId)
                 throw new ApiException("Invalid operation");
+
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                authenticatedUser.Id,
+                userId,
+                "Users are unavailable for conversation.");
 
             var conversationRepository = _unitOfWork.GetRepository<IConversationRepositoryAsync>();
 
@@ -71,7 +87,10 @@ namespace sparkdates.DomainServices.Chat
             if (authenticatedUser.Id == userId)
                 throw new ApiException("Invalid operation");
 
-            var userLikeRepository = _unitOfWork.GetRepository<IUserLikesRepositoryAsync>();
+            await _blockGuardServiceAsync.EnsureUsersCanInteractAsync(
+                authenticatedUser.Id,
+                userId,
+                "Users are unavailable for conversation.");
 
             var isMatched = await _matchServiceAsync.AreUsersMatchedAsync(authenticatedUser.Id, userId);
 

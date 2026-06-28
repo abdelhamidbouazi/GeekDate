@@ -30,6 +30,7 @@ export const endpoints = {
     unlikeProfile: (userId: string) => `${USERS}/unlike-profile/${userId}`,
     markViewed: (userId: string) => `${USERS}/mark-profile-as-viewed/${userId}`,
     blockProfile: (userId: string) => `${USERS}/block-profile/${userId}`,
+    unblockProfile: (userId: string) => `${USERS}/unblock-profile/${userId}`,
     profileViews: `${USERS}/profile-views`,
     profileLikes: `${USERS}/profile-likes`,
     likesGiven: `${USERS}/likes-given`,
@@ -40,6 +41,7 @@ export const endpoints = {
     completePreferences: `${PROFILE}/complete-preferences`,
     setLocation: `${PROFILE}/set-location`,
     updateProfile: `${PROFILE}/update-profile`,
+    blockedUsers: `${PROFILE}/blocked-users`,
   },
   matchmaking: {
     browse: MATCHMAKING,
@@ -69,8 +71,11 @@ export const endpoints = {
     unreadCount: (conversationId: string) => `${CHAT}/conversations/${conversationId}/unread-count`,
   },
   notifications: {
+    all: `${NOTIFICATION}`,
     unread: `${NOTIFICATION}/unread`,
+    unreadCount: `${NOTIFICATION}/unread-count`,
     markRead: `${NOTIFICATION}/mark-read`,
+    markOneRead: (id: string) => `${NOTIFICATION}/${id}/read`,
+    delete: (id: string) => `${NOTIFICATION}/${id}`,
   },
 } as const
-

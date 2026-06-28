@@ -3,5 +3,5 @@ export {
   deleteProfilePhoto,
   setMainProfilePhoto,
   type UploadedPhotoDto,
-} from "@/lib/api/profile"
+} from "./profile"
 

@@ -15,7 +15,6 @@ const pageNames: Record<string, string> = {
   "/messages": "Messages",
   "/profile-views": "Profile Views",
   "/profile": "My Profile",
-  "/settings": "Settings",
 }
 
 export type SiteHeaderProps = {

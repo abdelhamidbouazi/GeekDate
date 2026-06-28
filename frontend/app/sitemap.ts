@@ -10,7 +10,6 @@ const routes = [
   "/likes",
   "/messages",
   "/profile",
-  "/settings",
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

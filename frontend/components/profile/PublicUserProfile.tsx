@@ -10,7 +10,6 @@ import {
   MapPin,
   MessageCircle,
   MoreHorizontal,
-  ShieldCheck,
   Signal,
   Star,
   UserRound,
@@ -298,22 +297,6 @@ export function PublicUserProfile({ profileId }: PublicUserProfileProps) {
               </Card>
             </div>
 
-            <Card className="h-fit rounded-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ShieldCheck className="size-4" />
-                  Connection status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <StatusLine active={liked} label="You liked this user" />
-                <StatusLine active={likedByThem} label="This user likes you" />
-                <StatusLine active={isMatched} label="You are matched" />
-                <p className="pt-2 text-xs leading-5 text-muted-foreground">
-                  Public profiles never expose email, exact GPS, last name, visitors, received likes, or account settings.
-                </p>
-              </CardContent>
-            </Card>
           </section>
         </div>
       </main>
@@ -321,11 +304,3 @@ export function PublicUserProfile({ profileId }: PublicUserProfileProps) {
   )
 }
 
-function StatusLine({ active, label }: { active: boolean; label: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-      <span className="text-muted-foreground">{label}</span>
-      <Badge variant={active ? "default" : "secondary"}>{active ? "Yes" : "No"}</Badge>
-    </div>
-  )
-}

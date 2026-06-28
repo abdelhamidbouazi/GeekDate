@@ -88,16 +88,19 @@ export function parseConversationMessagesJson(raw: unknown): {
   messages: Message[];
   isBlocked: boolean;
 } {
+  // isBlocked is on the top-level Response<T> wrapper, not inside data
+  const topLevel = (raw ?? {}) as Record<string, unknown>
+  const isBlocked = Boolean(topLevel.isBlocked ?? topLevel.IsBlocked)
+
   const inner = unwrapEnvelope(raw);
   if (!inner || typeof inner !== "object") {
-    return { messages: [], isBlocked: false };
+    return { messages: [], isBlocked };
   }
   const o = inner as Record<string, unknown>;
   const pageData = normalizePaginatedMessages(o);
   const messages = pageData
     .map(normalizeMessage)
     .filter((message): message is Message => Boolean(message))
-  const isBlocked = Boolean(o.isBlocked ?? o.IsBlocked);
   return { messages, isBlocked };
 }
 

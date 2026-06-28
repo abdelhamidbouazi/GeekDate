@@ -19,7 +19,7 @@ namespace sparkdates.Application.Interfaces.Services
         Task<bool> UpdateUserProfileAsync(UpdateUserProfileCommand profuleCommand, Guid userId);
         Task<bool> DeleteUser(Guid id);
         Task<GetUserLikesDto> GetUserLikesAsync(Guid userId);
-        Task<GetUserBlocksDto> GetUserBlocksAsync(Guid userId);
+        Task<GetUsersBlocksDto> GetUserBlocksAsync(Guid userId);
         Task<bool> SetProfilePictureAsync(Guid userId, Guid pictureId);
         Task<bool> DeletePhotoAsync(Guid userId, Guid photoId);
         Task<bool> UploadPhotosAsync(List<IFormFile> photos, Guid userId);

@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Eye,
   User,
-  Settings,
   Video,
   Radio,
   Sparkles,
@@ -50,7 +49,6 @@ const navMainItems = [
 
 const navSecondary = [
   { title: "My Profile", url: "/profile", icon: User, badge: null },
-  { title: "Settings", url: "/settings", icon: Settings, badge: null },
 ]
 
 const navComingSoon = [
@@ -88,14 +86,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           m.profileApi.getProfileViews()
         ),
         import("@/lib/services/notification-api").then((m) =>
-          m.notificationApi.getUnread()
+          m.notificationApi.getUnreadCount()
         ),
       ])
       const matchesList = Array.isArray(matchList) ? matchList : []
       const likesList = Array.isArray(likesReceived) ? likesReceived : []
       const convsList = Array.isArray(convs) ? convs : []
       const viewsList = Array.isArray(views) ? views : []
-      const notifsList = Array.isArray(notifs) ? notifs : []
       const totalUnread = convsList.reduce((s, c) => s + (c.unreadCount ?? 0), 0)
       setBadges({
         matches: matchesList.length,
@@ -103,7 +100,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         messages: totalUnread,
         profileViews: viewsList.length,
       })
-      setNotifCount(notifsList.length)
+      setNotifCount(typeof notifs === "number" ? notifs : 0)
     } catch {
       // ignore
     }
@@ -156,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="h-14 rounded-2xl bg-linear-to-r from-rose-500 via-pink-500 to-orange-400 px-3 text-white shadow-lg shadow-rose-500/25 hover:from-rose-500 hover:to-orange-400 hover:text-white data-[slot=sidebar-menu-button]:!p-3"
+              className="h-14 rounded-2xl bg-linear-to-r from-rose-500 via-pink-500 to-orange-400 px-3 text-white shadow-lg shadow-rose-500/25 hover:from-rose-500 hover:to-orange-400 hover:text-white data-[slot=sidebar-menu-button]:p-3!"
             >
               <Link href="/home">
                 <div className="grid size-9 place-items-center rounded-full bg-white/20 ring-1 ring-white/30">
@@ -176,7 +173,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         <SidebarSeparator />
-        <SidebarNotificationsTrigger unreadCount={notifCount} />
+        <SidebarNotificationsTrigger
+          unreadCount={notifCount}
+          onUnreadCountChange={setNotifCount}
+        />
         <SidebarSeparator />
         <NavComingSoon items={data.navComingSoon} />
         <SidebarSeparator />
